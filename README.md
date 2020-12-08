@@ -10,8 +10,5 @@ This workflow is designed to operate in parallel on an HPC, so a lot of cpus and
 
 To make this workflow minimally difficult to operate, all the software needed has been packaged into a series of Singularity images, meaning that the only pre-requisite you need for the workflow to function other than a bash environment is Singularity and its prequisites.
 
-- bash environment
-- Singularity > v3.5.3
-- GO v
-
-Singularity and GO can be installed by entering the 'scripts' folder and entering ```/.singularity_install.sh```, otherwise you are ready to start!
+- bash environment (tested with Ubuntu 18.02)
+- Singularity >/ 3.5.3
