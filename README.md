@@ -1,13 +1,13 @@
 # fungiflow
 
-Repeatable, readable, and minimalist workflow for identifying biosynthetic gene clusters from raw sequence data with minimal inputs with a focus on fungal sequences.
+Repeatable, readable, and minimalist workflow for identifying biosynthetic gene clusters (BGCs) from raw sequence data with minimal inputs with a focus on fungal genomic or metagenomic sequences.
 
 The overall workflow is defined by:
 1. QC and trimming of reads with FastQC and Trimmomatic
 2. Filtering non-eukaroytic contamination with Kraken2 (standard database | Oct 2020)
 3. QC of trimmed and filtered reads with FastQC
 4. Assembly:
-    - SPAdes for single organisms sequence reads
+    - SPAdes for genomic sequence reads
     - metaSPAdes for metagenomic sequence reads
     - MaSurCa is used if the first assembly with SPAdes or metaSPAdes fails
 5. Taxonomic identification of contigs using Kraken2 (database of all representative fungal genomes | Nov 2020)
