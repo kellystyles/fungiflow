@@ -2,7 +2,7 @@
 
 Repeatable, readable, and minimalist workflow for identifying biosynthetic gene clusters from raw sequence data with minimal inputs with a focus on fungal sequences.
 
-![alt text](https://github.com/kellystyles/fungiflow/blob/[branch]/image.jpg?raw=true)
+![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_nov_2020.png)
 Overview of fungiflow pipeline
 
 ## Installation
