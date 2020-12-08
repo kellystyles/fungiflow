@@ -76,10 +76,22 @@ The resulting report can be found at `/fungiflow/projects/project_name` director
  - the log file for each array task can be found in `/fungiflow/scripts` with the `<JOB_NUMBER>_<SLURM_ARRAY_TASK_ID>_<JOB_NAME>.log` naming convention.
  - adapters can be found in `/fungiflow/projects/<PROJECT_NAME>/data/adapters/` in 'fasta' format
  - trimmed reads can be found in `/fungiflow/projects/<PROJECT_NAME>/data/trimmed/` in 'fg.gz' format
- - the FastQC and MultiQC output files can be found in `/fungiflow/projects/<PROJECT_NAME>/output/(raw_QC|trimmed_QC)/`
+ - the FastQC output files can be found in `/fungiflow/projects/<PROJECT_NAME>/output/(raw_QC|trimmed_QC)/`
  - Kraken2-filtered reads can be found in `/fungiflow/projects/<PROJECT_NAME>/data/classified/`
        - the classified reads are named `<SLURM_ARRAY_TASK_ID>_cseqs_1.fq` and `<SLURM_ARRAY_TASK_ID>_cseqs_2.fq`
        - the unclassified reads are named `<SLURM_ARRAY_TASK_ID>_useqs_1.fq` and `<SLURM_ARRAY_TASK_ID>_useqs_2.fq` (used for assembly)
  - the assembled reads can be found in `/fungiflow/projects/<PROJECT_NAME>/data/assembly/<SLURM_ARRAY_TASK_ID>/`
  - Quast output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/quast/${SLURM_ARRAY_TASK_ID}/`
  - antiSMASH output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/antismash/${SLURM_ARRAY_TASK_ID}/`
+ 
+ ### Collating output and reports
+
+For convenience a script that will collate all the QC and output is available
+```
+bash report_collator.sh
+```
+This will create the following new files:
+- report file at `/fungiflow/projects/<PROJECT_NAME>/output/<TIME>_<PROJECT_NAME>_report_collator.txt`
+- MultiQC output in `/fungiflow/projects/<PROJECT_NAME>/output/<PROJECT_NAME>_(raw|trimmed)_multiqc_report.html`
+- collated QUAST output in `/fungiflow/projects/<PROJECT_NAME>/output/collated_quast_reports.tsv`
+- collated antiSMASH output in the `/fungiflow/projects/<PROJECT_NAME>/output/antismash_collated/` folder
