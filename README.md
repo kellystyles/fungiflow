@@ -81,8 +81,12 @@ The resulting report can be found at `/fungiflow/projects/project_name` director
        - the classified reads are named `<SLURM_ARRAY_TASK_ID>_cseqs_1.fq` and `<SLURM_ARRAY_TASK_ID>_cseqs_2.fq`
        - the unclassified reads are named `<SLURM_ARRAY_TASK_ID>_useqs_1.fq` and `<SLURM_ARRAY_TASK_ID>_useqs_2.fq` (used for assembly)
  - the assembled reads can be found in `/fungiflow/projects/<PROJECT_NAME>/data/assembly/<SLURM_ARRAY_TASK_ID>/`
- - Quast output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/quast/${SLURM_ARRAY_TASK_ID}/`
- - antiSMASH output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/antismash/${SLURM_ARRAY_TASK_ID}/`
+ - Kraken2 output of reads and contigs can be found in `/fungiflow/projects/<PROJECT_NAME>/output/classified/`
+       - the reads output is named `<SLURM_ARRAY_TASK_ID>_kraken2_reads_report.txt`
+       - the contig output is named `<SLURM_ARRAY_TASK_ID>_kraken2_contigs_report.txt`
+       - the Kronogram for the contigs report is named `<SLURM_ARRAY_TASK_ID>_contigs_kronogram.html`
+ - Quast output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/quast/<SLURM_ARRAY_TASK_ID>/`
+ - antiSMASH output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/antismash/<SLURM_ARRAY_TASK_ID>/`
  
  ### Collating output and reports
 
