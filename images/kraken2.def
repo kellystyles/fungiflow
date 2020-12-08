@@ -1,0 +1,57 @@
+Bootstrap: debootstrap
+OSVersion: bionic
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%help
+    # This is a container containing Kraken2
+
+%post
+    # installing prerequisites not specified by install instructions
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    apt-get update
+    apt-get install -y build-essential perl wget rsync gzip curl
+    
+    wget https://github.com/DerrickWood/kraken2/archive/v2.1.0.tar.gz
+    tar -xvzf v2.1.0.tar.gz && mv kraken2-2.1.0 kraken2
+    cd kraken2
+    ./install_kraken2.sh .
+    export PATH="$PATH:/kraken2/scripts" >> ~/.bashrc
+    export PATH="$PATH:/kraken2/src" >> ~/.bashrc
+    export KRAKEN2_DB_PATH="/kraken2/kraken2_db" >> ~/.bashrc
+    export KRAKEN2_DEFAULT_DB="/kraken2/kraken2_db" >> ~/.bashrc
+    cp classify scripts/classify
+    cd /
+
+    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/LATEST/ncbi-blast-2.10.1+-x64-linux.tar.gz
+    tar zxvpf ncbi-blast-2.10.1+-x64-linux.tar.gz
+    mv ncbi-blast-2.10.1+ ncbi-blast
+    export PATH="$PATH:/ncbi-blast/bin" >> ~/.bashrc
+
+    wget https://github.com/marbl/Krona/archive/v2.7.1.tar.gz
+    tar -xvzf v2.7.1.tar.gz
+    cd Krona-2.7.1/KronaTools
+    ./install.pl
+    export PATH="$PATH:/Krona-2.7.1/KronaTools/scripts" >> ~/.bashrc
+    cd /
+
+    export PATH="$PATH:/" >> ~/.bashrc
+    echo $PATH
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH="$PATH:/kraken2/scripts"
+    export PATH="$PATH:/kraken2/src"
+    export KRAKEN2_DB_PATH="/kraken2/kraken2_db"
+    export KRAKEN2_DEFAULT_DB="/kraken2/kraken2_db"
+    export PATH="$PATH:/ncbi-blast/bin"
+    export PATH="$PATH:/Krona-2.7.1/KronaTools/scripts"
+    export PATH="$PATH:/"
+
+%labels
+    Version: 1
+    Maintainer "Kelly Styles" <kelly.styles@vuw.ac.nz>
+

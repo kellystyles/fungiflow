@@ -1,0 +1,104 @@
+Bootstrap: debootstrap
+OSVersion: bionic
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%help
+    echo "This is the Assembly Singularity container for use in the FungiFlow pipeline"
+    echo "This is version 1 of this singularity container"
+    echo "This image contains the following software:"
+    echo " - SPAdes"
+    echo " - SparseAssembler"
+    echo " - DBG2OLC"
+    echo " - MaSurCa"
+    echo " - Blasr"
+    echo " - SmartDeNovo"
+    echo " - Pilon"
+
+%post
+    # installing prerequisites needed for installation
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    cat /etc/apt/sources.list
+    export LC_ALL=C
+    export LANG=C
+    export PATH=$PATH:/ >> ~/.bashrc
+    apt-get update && apt-get install -y \
+    build-essential manpages-dev apt-utils locales vim wget default-jre blasr libblasr \
+    python3 python3-setuptools libboost-all-dev perl bzip2 libbz2-dev git python3-pip \
+    
+    pip3 install setuptools
+    
+    #SmartDeNovo install
+    # Download sample PacBio from the PBcR website
+    wget -O- http://www.cbcb.umd.edu/software/PBcR/data/selfSampleData.tar.gz | tar zxf -
+    awk 'NR%4==1||NR%4==2' selfSampleData/pacbio_filtered.fastq | sed 's/^@/>/g' > reads.fa
+    # Install SMARTdenovo
+    git clone https://github.com/ruanjue/smartdenovo.git 
+    cd smartdenovo
+    sed -i 's/inline int cut_biedge_strgraph2/static int cut_biedge_strgraph2/g' wtlay.h 
+    make
+    cd /
+    export PATH=$PATH:/smartdenovo/ >> ~/.bashrc
+
+    # SPAdes install
+    wget http://cab.spbu.ru/files/release3.12.0/SPAdes-3.12.0-Linux.tar.gz -O /SPAdes-3.12.0-Linux.tar.gz
+    tar -xzf /SPAdes-3.12.0-Linux.tar.gz
+    export PATH=$PATH:/SPAdes-3.12.0-Linux/bin/ >> ~/.bashrc
+    
+    # SparseAssembler install
+    mkdir SparseAssembler
+    cd SparseAssembler
+    wget https://github.com/yechengxi/DBG2OLC/raw/master/compiled/SparseAssembler
+    chmod 777 SparseAssembler
+    cd /
+    export PATH=$PATH:/SparseAssembler/ >> ~/.bashrc
+    
+    # DBG2OLC install
+    mkdir DBG2OLC
+    cd DBG2OLC
+    wget https://github.com/yechengxi/DBG2OLC/raw/master/compiled/DBG2OLC
+    chmod 777 DBG2OLC
+    cd /
+    export PATH=$PATH:/DBG2OLC/ >> ~/.bashrc
+    
+    # Sparc install
+    mkdir Sparc
+    cd Sparc
+    wget https://github.com/yechengxi/DBG2OLC/raw/master/compiled/Sparc
+    chmod 777 Sparc
+    cd /
+    export PATH=$PATH:/Sparc/ >> ~/.bashrc
+
+    # MaSurCa install
+    wget https://github.com/alekseyzimin/masurca/releases/download/v3.4.2/MaSuRCA-3.4.2.tar.gz
+    tar xvf MaSuRCA-3.4.2.tar.gz
+    cd MaSuRCA-3.4.2/
+    ./install.sh
+    cd /
+    export PATH=$PATH:/MaSuRCA-3.4.2/bin/ >> ~/.bashrc
+
+    # BWA mem
+    git clone https://github.com/lh3/bwa.git
+    cd bwa; make
+    cd /
+    export PATH=$PATH:/bwa/ >> ~/.bashrc
+
+    # Pilon
+    wget https://github.com/broadinstitute/pilon/releases/download/v1.23/pilon-1.23.jar
+    
+%environment
+    export LC_ALL=C
+    export LANG=C
+    export PATH=$PATH:/SPAdes-3.12.0-Linux/bin/
+    export PATH=$PATH:/MaSuRCA-3.4.2/bin/
+    export PATH=$PATH:/smartdenovo/
+    export PATH=$PATH:/SparseAssembler/
+    export PATH=$PATH:/DBG2OLC/
+    export PATH=$PATH:/Sparc/
+    export PATH=$PATH:/bwa/
+    export PATH=$PATH:/ 
+
+%labels
+    Version: 1
+    Maintainer "Kelly Styles" <kelly.styles@vuw.ac.nz>
+
