@@ -2,6 +2,19 @@
 
 Repeatable, readable, and minimalist workflow for identifying biosynthetic gene clusters from raw sequence data with minimal inputs with a focus on fungal sequences.
 
+The overall workflow is defined by:
+1. QC and trimming of reads with FastQC and Trimmomatic
+2. Filtering non-eukaroytic contamination with Kraken2 (standard database | Oct 2020)
+3. QC of trimmed and filtered reads with FastQC
+4. Assembly:
+    - SPAdes for single organisms sequence reads
+    - metaSPAdes for metagenomic sequence reads
+    - MaSurCa is used if the first assembly with SPAdes or metaSPAdes fails
+5. Taxonomic identification of contigs using Kraken2 (database of all representative fungal genomes | Nov 2020)
+6. Annotation an extraction of ITS regions using ITSx and BLASTn of ITS sequences (ITS_Refseq_Fungi | Oct 2020)
+7. Evaluations of assemblies using QUAST
+8. Identification of BGCs using antiSMASH (ver 5.1.3)
+
 ![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_nov_2020.png)
 Overview of fungiflow pipeline
 
