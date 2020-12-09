@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="""\
 This script will find all antiSMASH '.json' output files from a given 'input_directory' (including subdirectories), \
 parses and then outputs a combined '.json' file with the 'output_name' as output. \
 \
-~ JSON parse functions written by Jeremy Owen | \
+~~ JSON parse functions written by Jeremy Owen | \
 antismash_collator.py is maintained by Kelly Styles - kelly.styles@vuw.ac.nz ~~ \
 """.format(version=version))
 
@@ -191,7 +191,7 @@ if args.partial:
 if args.taxonomy:
     taxonomy = args.taxonomy
     print("The taxonomy is %s" % taxonomy)
-if args.rebuild:
+if args.rebuild is not None:
     antismash_image = args.rebuild
     print("The collated JSON file will be rebuilt with antiSMASH using %s" % antismash_image)
 
@@ -202,7 +202,5 @@ bgc_count = len(parsed_folder['records'])
 print("Found %s BGCs" % bgc_count)
 print("Writing BGCs to new JSON file...")
 jsonDump(parsed_folder, output_file)
-if args.rebuild:
+if args.rebuild is not None:
     generate_bgc_html(antismash_image, output_file, output_name, cpus)
-
-
