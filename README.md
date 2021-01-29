@@ -1,6 +1,6 @@
 # fungiflow
 
-Repeatable, readable, and minimalist workflow for identifying biosynthetic gene clusters (BGCs) from raw sequence data with minimal inputs with a focus on fungal genomic or metagenomic sequences.
+Repeatable, parallelized, readable, and minimalist workflow for identifying biosynthetic gene clusters (BGCs) from raw sequence data with minimal inputs - focused on fungal genomic or metagenomic sequences.
 
 The overall workflow is defined by:
 1. QC and trimming of reads with FastQC and Trimmomatic
@@ -13,7 +13,8 @@ The overall workflow is defined by:
 5. Taxonomic identification of contigs using Kraken2 (database of all representative fungal genomes | Nov 2020)
 6. Annotation an extraction of ITS regions using ITSx and BLASTn of ITS sequences (ITS_Refseq_Fungi | Oct 2020)
 7. Evaluations of assemblies using QUAST
-8. Identification of BGCs using antiSMASH (ver 5.1.3)
+8. Identification of BGCs using antiSMASH (v5.1.3)
+9. Annotation of contigs with the Funannotate pipeline (v1.8.3)
 
 ![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_nov_2020.png)
 Overview of fungiflow pipeline
@@ -28,12 +29,17 @@ To make this workflow repeatable, readable, and minimally difficult to operate, 
 - bash environment (tested with Ubuntu 18.02)
 - Singularity >/ 3.5.3
 
+If you wish to use the optional Funannotate module, you will need to copy the `gm_key` file to `~/.gm_key` on the cluster or machine you are working on. You could use a command like `cp /fungiflow/scripts/gm_key ~/.gm_key`. This key has an academic license and will only last for 400 days before it needs to be re-used. If this is the case, the GeneMark-ES software will fail (can check in the log file) and a new license must be downloaded from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi). Extract the `gm_key_64` file to `~/`
+
 ## Usage
 
-### Files
+Most modules in the FungiFlow pipeline are optional and can be performed individually by calling the specific module in the parameters like so...
+```singularity exec /path/to/fungiflow/images/module.sif module_name.sh --input file.fasta --output file_modulized --cpus 24```
+
+### Files/Directory Tree
 After cloning into the fungiflow GitHub repository, create a new project folder in `/fungiflow/projects/`. In this folder, create a nested directory named `data/raw` and place all raw Illumina sequence reads into this folder in `*fq.gz format` (no preprocessed reads). The final path should look like `/fungiflow/projects/project_name/data/raw`.
 
-To utilise parallel computing, the sequence read names must be appeneded with a number and pair information. This can be automatically performed by running `name_change.sh` in 
+To utilise parallel computing, sequence read names must be appeneded with a number and pair information. This can be automatically performed by running `name_change.sh` in 
 the `/fungiflow/scripts` folder as below. This will return a `filenames.txt` document which lists the name of each sequence file and the number prepended to it.
 ```
 name_change.sh /fungiflow/projects/project_name/data/raw
@@ -55,6 +61,7 @@ Following this, ensure that all the Singularity images are present in the `/fung
 3. kraken2.sif
 4. itsx.sif
 5. antismash.sif
+6. funannotate.sif
 
 ### Running fungiflow
 
@@ -62,7 +69,7 @@ Make a copy of fungiflow.sh
 ```
 cp fungiflow.sh fungiflow_copy.sh
 ```
-Edit this copy with the desired arguments under `### Variables ###`, as well as in the SLURM `#SBATCH` arguments. These arguments must match (e.g., if `#SBATCH --cpus-per-task=12` then the following is required `cpus=12`). Ensure that the correct number of tasks has been designated in the SLURM array (e.g., `#SBATCH --array=1-n%x`; where `n` is the total number of tasks and `x` is the number of tasks to run at once).
+Edit this copy with the desired arguments under `### Variables ###`, as well as in the SLURM `#SBATCH` arguments. These arguments must match (e.g., if `#SBATCH --cpus-per-task=12` then the following is required `cpus=12`). Ensure that the correct number of tasks has been designated in the SLURM array (e.g., `#SBATCH --array=1-n%x`; where `n` is the total number of tasks and `x` is the number of tasks to run in parallel).
 
 Submit this script to SLURM
 ``` 
@@ -87,10 +94,11 @@ The resulting report can be found at `/fungiflow/projects/project_name` director
        - the Kronogram for the contigs report is named `<SLURM_ARRAY_TASK_ID>_contigs_kronogram.html`
  - Quast output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/quast/<SLURM_ARRAY_TASK_ID>/`
  - antiSMASH output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/antismash/<SLURM_ARRAY_TASK_ID>/`
+ - Funannotate output can be found in `/fungiflow/projects/<PROJECT_NAME>/output/funannotate/<SLURM_ARRAY_TASK_ID>/`
  
- ### Collating output and reports
+### Collating output and reports
 
-For convenience a script that will collate all the QC and output is available
+For convenience, a script that will collate all the QC and output is available
 ```
 bash report_collator.sh
 ```
@@ -99,3 +107,4 @@ This will create the following new files:
 - MultiQC output in `/fungiflow/projects/<PROJECT_NAME>/output/<PROJECT_NAME>_(raw|trimmed)_multiqc_report.html`
 - collated QUAST output in `/fungiflow/projects/<PROJECT_NAME>/output/collated_quast_reports.tsv`
 - collated antiSMASH output in the `/fungiflow/projects/<PROJECT_NAME>/output/antismash_collated/` folder
+- collate all annotations from the final Funannotate annotated genbank file into a tsv file in each annotation folder e.g., `/fungiflow/projects/<PROJECT_NAME>/output/funannotate/<SLURM_ARRAY_TASK_ID>/<SLURM_ARRAY_TASK_ID>_funannotate_annotations.tsv`
