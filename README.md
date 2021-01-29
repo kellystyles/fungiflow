@@ -16,7 +16,7 @@ The overall workflow is defined by:
 8. Identification of BGCs using antiSMASH (v5.1.3)
 9. Annotation of contigs with the Funannotate pipeline (v1.8.3)
 
-![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_nov_2020.png)
+![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_jan_2021.png)
 Overview of fungiflow pipeline
 
 ## Installation
@@ -31,6 +31,16 @@ To make this workflow repeatable, readable, and minimally difficult to operate, 
 
 If you wish to use the optional Funannotate module, you will need to copy the `gm_key` file to `~/.gm_key` on the cluster or machine you are working on. You could use a command like `cp /fungiflow/scripts/gm_key ~/.gm_key`. This key has an academic license and will only last for 400 days before it needs to be re-used. If this is the case, the GeneMark-ES software will fail (can check in the log file) and a new license must be downloaded from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi). Extract the `gm_key_64` file to `~/`
 
+To check that all the necessary files are present the `check_install.sh` script can be executed from `/fungiflow/scripts`.
+
+### Databases
+
+Several databases are needed for fungiflow to operate correctly. These can be installed by running the `install_db.sh` script as such from the `/fungiflow/scripts` directory
+```
+bash install_db.sh
+```
+Some of these databases are pretty large so the install may take several hours.
+
 ## Usage
 
 Most modules in the FungiFlow pipeline are optional and can be performed individually by calling the specific module in the parameters like so...
@@ -44,24 +54,6 @@ the `/fungiflow/scripts` folder as below. This will return a `filenames.txt` doc
 ```
 name_change.sh /fungiflow/projects/project_name/data/raw
 ```
-
-### Databases
-
-Several databases are needed for fungiflow to operate correctly. These can be installed by running the `install_db.sh` script as such from the `/fungiflow/scripts` directory
-```
-bash install_db.sh
-```
-Some of these databases are pretty large so the install may take several hours.
-
-### Singularity images
-
-Following this, ensure that all the Singularity images are present in the `/fungiflow/images/` folder:
-1. qc.sif
-2. assembly.sif
-3. kraken2.sif
-4. itsx.sif
-5. antismash.sif
-6. funannotate.sif
 
 ### Running fungiflow
 
