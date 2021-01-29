@@ -16,7 +16,7 @@ The overall workflow is defined by:
 8. Identification of BGCs using antiSMASH (v5.1.3)
 9. Annotation of contigs with the Funannotate pipeline (v1.8.3)
 
-![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/fungiflow_Jan_2021.png)
+![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/Pipeline_progress_Jan_2021.png)
 Overview of fungiflow pipeline
 
 ## Installation
