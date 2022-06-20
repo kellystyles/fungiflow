@@ -1,0 +1,121 @@
+Bootstrap: debootstrap
+OSVersion: bionic
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%labels
+    Author: Kelly Styles
+    Version: 0.2
+
+%post
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+	apt-get update
+	apt-get -y install \
+    build-essential manpages-dev apt-utils locales wget default-jre liblzma-dev \
+    libboost-all-dev perl wget build-essential python3 python3-pip \
+    zlib1g-dev pkg-config libfreetype6-dev libpng-dev python-matplotlib \
+    openjdk-11-jdk openjdk-11-jre trimmomatic
+    apt-get clean
+
+    # Installing Miniconda
+    if [ ! -d /usr/local/anaconda ]; then
+    	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+    	-O ~/conda.sh && bash ~/conda.sh -bfp /usr/local
+    	rm ~/conda.sh
+    fi
+    conda update conda -y -q
+    . /usr/local/etc/profile.d/conda.sh
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+    conda config --add channels defaults
+
+    # Install micromaba
+    conda create -n environ mamba
+    conda activate environ
+    mamba install -c conda-forge -c bioconda -y kraken2 python=3.8 pilon spades flye masurca \
+    racon medaka krona itsx fastqc nanocomp minimap2 seaborn
+    
+    mamba update kraken2 pilon spades flye masurca \
+    racon medaka krona itsx fastqc nanocomp minimap2 seaborn
+
+    mamba clean -a
+
+    # Installing specific software
+    # - BBMap suite
+    wget https://versaweb.dl.sourceforge.net/project/bbmap/BBMap_38.96.tar.gz 
+    tar xvzf BBMap_38.96.tar.gz && rm BBMap_38.96.tar.gz
+    mv bbmap/* /usr/bin/
+    # - NCBI+ suite
+    VERSION=2.11.0
+    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$VERSION/ncbi-blast-$VERSION+-x64-linux.tar.gz
+    wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$VERSION/ncbi-blast-$VERSION+-x64-linux.tar.gz.md5
+    md5sum -c ncbi-blast-2.11.0+-x64-linux.tar.gz.md5
+    tar zxvpf ncbi-blast-$VERSION+-x64-linux.tar.gz && rm ncbi-blast-$VERSION+-x64-linux.tar.gz
+    mv ncbi-blast-2.11.0+/bin/* /usr/bin/
+    # - Quast
+    wget https://downloads.sourceforge.net/project/quast/quast-5.0.2.tar.gz
+    tar -xzf quast-5.0.2.tar.gz
+    cd quast-5.0.2
+    ./setup.py install
+    QUAST_JSON="/usr/local/envs/environ/lib/python3.8/site-packages/quast-5.0.2-py3.8.egg/quast_libs/site_packages/jsontemplate/jsontemplate.py"
+    sed -i 's/import cgi/import html/g' "$QUAST_JSON"
+    sed -i 's/cgi.escape/html.escape/g' "$QUAST_JSON"
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/local/etc/profile.d/conda.sh
+    conda activate environ
+
+%test
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    . /usr/local/etc/profile.d/conda.sh
+    conda activate environ
+
+    printf "\n### Software versions ###\n"
+    # Python modules
+    python3 --version
+    pip3 list | grep "mamba \|biopython\|numpy\|pandas\|seaborn"
+
+    # Quality control
+    echo -ne "Trimmomatic " && trimmomatic -version
+    fastqc --version 
+    NanoComp --version    
+
+    # Assembly/Polishing
+    spades.py --version
+    metaspades.py --version  
+    echo -ne "Flye " && flye --version 
+    echo -ne "Masurca " && masurca --version
+    echo -ne "Minimap2 " && minimap2 --version
+    echo -ne "Racon " && racon --version
+    medaka --version
+    pilon --version
+    echo -ne "Minimap2 " && minimap2 --version 
+    bbduk.sh --version > tmp 2>&1 && grep "version " tmp && rm tmp
+    
+    # Assembly assessment
+    ktImportTaxonomy | grep "KronaTools" | cut -d" " -f2,3
+    echo -ne "ITSx " && head /usr/local/envs/environ/bin/ITSx | grep "app_version" | cut -d"\"" -f2
+    kraken2 --version | grep "version"
+    blastn -version | grep "+"  
+    quast.py --version
+
+    printf "\n### All software installed :) ###\n"
+
+%help
+       _______
+    __/ About \___________________________________________________
+    This is the primary container of the Fungiflow pipeline.
+                _______
+    ___________/ Usage \__________________________________________
+    To run the Fungiflow pipeline, please refer to the main script;
+        `fungiflow.py --help`.
+
+    If you'd like, add this container to your PATH using:
+        `export "PATH=/path/to/fungiflow_v0.1.def:$PATH"`
+      

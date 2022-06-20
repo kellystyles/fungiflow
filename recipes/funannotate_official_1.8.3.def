@@ -1,0 +1,28 @@
+Bootstrap: docker
+From: nextgenusfs/funannotate
+
+%post
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    export LC_ALL=C
+    export LANG=C
+    apt update && apt install -y perl make cpanminus gcc dialog wget
+    
+    # Perl modules installation
+    cpanm YAML Hash::Merge Logger::Simple Parallel::ForkManager MCE::Mutex Thread::Queue threads Getopt::Std
+
+    # GeneMark install
+    wget https://github.com/kellystyles/useful_stuff/blob/main/gmes_linux_64.tar.gz
+    tar -xvzf gmes_linux_64.tar.gz
+    cp gmes_linux_64/* ~/local/bin/
+    export GENEMARK_PATH="~/local/bin/" >> ~/.bashrc
+    wget https://github.com/kellystyles/useful_stuff/blob/main/gm_key_64.gz
+    zcat gm_key_64.gz > ~/.gm_key
+    
+%test
+    cd ~/local/bin/GeneMark-E-tests/EP
+    mkdir test && cd test
+    gmes_petap.pl --seq ../input/genome.fasta --EP --dbep ../input/proteins.fasta --verbose --cores=8 --max_intergenic 10000
+
+%help
+Built from Docker Hub nextgenusfs/funannotate
