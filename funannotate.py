@@ -19,10 +19,10 @@ def funannotate_clean(input_args,assembly,funannotate_clean):
     Output:     cleaned assembly FASTA file
     """
 
-    stdout = f"{array}_clean.out"
-    stderr = f"{array}_clean.err"
+    stdout = f"{input_args.array}_clean.out"
+    stderr = f"{input_args.array}_clean.err"
 
-    print_n(" - cleaning assembly")
+    lib.print_n(" - cleaning assembly")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate,"funannotate","clean","-i",assembly,"-o",funannotate_clean,"--cpus",input_args.cpus]
     print(" ".join(cmd1))
     try:
@@ -39,10 +39,10 @@ def funannotate_sort(input_args,funannotate_clean,funannotate_sort):
     Output:     sorted and cleaned assembly FASTA file
     """
 
-    stdout = f"{array}_sort.out"
-    stderr = f"{array}_sort.err"
+    stdout = f"{input_args.array}_sort.out"
+    stderr = f"{input_args.array}_sort.err"
 
-    print_n(" - sorting contigs")
+    lib.print_n(" - sorting contigs")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate,"funannotate","sort","-i",funannotate_clean,"-o",funannotate_sort]
     print(" ".join(cmd1))
     try:
@@ -59,10 +59,10 @@ def funannotate_mask(input_args,funannotate_sort,funannotate_mask):
     Output:     sorted, cleaned and masked assembly FASTA file
     """
 
-    stdout = f"{array}_mask.out"
-    stderr = f"{array}_mask.err"
+    stdout = f"{input_args.array}_mask.out"
+    stderr = f"{input_args.array}_mask.err"
 
-    print_n(" - soft masking repetitive regions")
+    lib.print_n(" - soft masking repetitive regions")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate,"funannotate","mask","-i",funannotate_sort,"-o",funannotate_mask,"--cpus",input_args.cpus]
     print(" ".join(cmd1))
     try:
@@ -82,7 +82,7 @@ def funannotate_predict(input_args,funannotate_path,funannotate_mask):
     stdout = f"{input_args.array}_predict.out"
     stderr = f"{input_args.array}_predict.err"
 
-    print_n(" - predicting genes...")
+    lib.print_n(" - predicting genes...")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate,"funannotate","predict","-i",funannotate_mask,"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
     print(" ".join(cmd1))
     try:
@@ -106,7 +106,7 @@ def main(input_args,filenames):
     funannotate_mask_fasta = f"{input_args.array}_masked.fasta"
     funannotate_gbk = os.path.join("predict_results",f"{input_args.array}.gbk")
     if lib.file_exists_bool(funannotate_clean_fasta,0,"Assembly already cleaned by Funannotate! Skipping...",) is False:
-        funannotate_clean(input_args,assembly_fasta,funannotate_clean_fasta)
+        funannotate_clean(input_args,filenames.assembly_fasta,funannotate_clean_fasta)
         lib.file_exists(funannotate_clean_fasta,0,"Assembly successfuly cleaned by Funannotate","Funannotate clean failed... check the logs and your inputs")
     if lib.file_exists_bool(funannotate_sort_fasta,0,"Assembly successfuly sorted by Funannotate! Skipping...",) is False:
         funannotate_sort(input_args,funannotate_clean_fasta,funannotate_sort_fasta)

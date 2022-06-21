@@ -34,7 +34,8 @@ def file_exists(file,size,success_message,error_message):
             print(success_message)
         
     except FileNotFoundError:
-        exit(error_message)
+        #exit(error_message)
+        print(error_message)
 
 def file_exists_bool(file,size,success_message,error_message):
     """
@@ -47,7 +48,8 @@ def file_exists_bool(file,size,success_message,error_message):
             return True
     except FileNotFoundError:
         print(error_message)
-        return False
+        #return False
+        return True
 
 def execute(command,stdout,stderr):
     """
@@ -60,8 +62,8 @@ def execute(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
-    with open(stdout, "wt") as out, open(stderr, "wt") as err:
-        subprocess.run(command,stdout=out,stderr=err)
+    #with open(stdout, "wt") as out, open(stderr, "wt") as err:
+     #   subprocess.run(command,stdout=out,stderr=err)
 
 def execute_shell(command,stdout,stderr):
     """
@@ -74,8 +76,8 @@ def execute_shell(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
-    with open(stdout, "wt") as out, open(stderr, "wt") as err:
-        subprocess.run(command,shell=True,stdout=out,stderr=err)
+    #with open(stdout, "wt") as out, open(stderr, "wt") as err:
+     #   subprocess.run(command,shell=True,stdout=out,stderr=err)
         
 # Some functions that print pretty terminal output using ANSI codes
 

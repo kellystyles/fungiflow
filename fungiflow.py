@@ -30,8 +30,8 @@ def get_args():
                             help='Number of threads to use', type=str, required=True)
         parser.add_argument('-m', '--mem', action='store',
                             help='Amount of memory to use (in GB)', type=str, required=True)
-        parser.add_argument('-ant', '--antismash', action='store',
-                            help='Add this argument if you would like to search the assembly for BGCs', type=str)
+        parser.add_argument('-ant', '--antismash', action='store_true',
+                            help='Add this argument if you would like to search the assembly for BGCs')
         parser.add_argument('-s', '--singularity', '--singularity', action='store',
                             help='Primary Singularity image for Fungiflow', type=str, default=os.path.join("images","fungiflow.sif"))
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
@@ -44,21 +44,20 @@ def get_args():
                             help='Path to Kraken2 standard database. Part of taxonomic module.', type=str)
         parser.add_argument('-bdb', '--blob_db', action='store', default=os.path.join("databases","NCBI_nt","nt"),
                             help='Path to NCBI-nt database for blobtools. Part of blobtools module.', type=str)
-        parser.add_argument('-n', '--nanopore', action='store', default="", 
-                            help='Nanopore reads. Requires \'-t hybrid\' argument', type=str)
-        parser.add_argument('-t', '--type', action='store', default="short", 
-                            help='Assembly type i.e., \'short\' or \'hybrid\'', type=str)
-        parser.add_argument('-dt', '--data_type', action='store', default="isolate", 
+        parser.add_argument('-n', '--nanopore', action='store',
+                            help='Nanopore reads.', type=str)
+        parser.add_argument('-t', '--type', action='store', default="isolate", 
                             help='Sequence data source type. Accepted arguments are \
-                            \'isolate\' and \'metagneomic\'', type=str)
-        parser.add_argument('-b', '--blobplot', action='store', 
-                            help='Prepare blobplots of assembly', type=str)        
+                            \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
+        parser.add_argument('-b', '--blobplot', action='store_true', 
+                            help='Prepare blobplots of assembly')        
 
         if len(sys.argv) < 6:
-            parser.lib.print_help(sys.stderr)
+            parser.print_help(sys.stderr)
             lib.print_e("Parser expecting 6 or more arguments")
             exit(1)
     except argparse.ArgumentError:
+        parser.print_help(sys.stderr)
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
         exit(1)
 
@@ -74,16 +73,16 @@ def main():
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂\n")
     start_time = datetime.datetime.now()
     os.chdir(args.directory)
-    lib.print_n(args)
+    args
 
     # Sets up class object for filenames
-    names = Files(args.array)
+    names = lib.Files(args.array)
 
     # Running 'ASSEMBLY' module
     assembly.main(args,names)
 
     # Running 'FUNANNOTATE' module
-    if len(args.singularity_funannotate) > 0:
+    if args.singularity_funannotate is not None:
         funannotate.main(args,names)
     else:
         lib.print_h("Skipping assembly annotation...")
@@ -99,7 +98,7 @@ def main():
     post_analysis(args,names)
 
     # Running 'BLOBPLOT' module
-    if args.blobplot is True:
+    if args.blobplot is not None:
         blobplot.main(args,names)
 
     lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
