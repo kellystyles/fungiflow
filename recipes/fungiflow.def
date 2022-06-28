@@ -35,11 +35,12 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     # Install micromaba
     conda create -n environ mamba
     conda activate environ
-    mamba install -c conda-forge -c bioconda -y kraken2 python=3.8 pilon spades flye masurca \
-    racon medaka krona itsx fastqc nanocomp minimap2 seaborn
+    mamba install -c conda-forge -c bioconda -y kraken2 python=3.8 pilon spades flye masurca fmlrc \
+    racon medaka krona itsx fastqc nanocomp minimap2 seaborn docopt tqdm wget pyyaml git pysam blobtools
     
-    mamba update kraken2 pilon spades flye masurca \
-    racon medaka krona itsx fastqc nanocomp minimap2 seaborn
+    mamba update kraken2 pilon spades flye masurca fmlrc \
+    racon medaka krona itsx fastqc nanocomp minimap2 seaborn docopt tqdm wget pyyaml git blobtools
+    mamba install -y -c bioconda pysam --update-deps
 
     mamba clean -a
 
@@ -63,6 +64,10 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     QUAST_JSON="/usr/local/envs/environ/lib/python3.8/site-packages/quast-5.0.2-py3.8.egg/quast_libs/site_packages/jsontemplate/jsontemplate.py"
     sed -i 's/import cgi/import html/g' "$QUAST_JSON"
     sed -i 's/cgi.escape/html.escape/g' "$QUAST_JSON"
+    # - BlobToolKit
+    wget ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz* -P data/
+    tar zxf data/taxdump.tar.gz -C data/ nodes.dmp names.dmp
+    ./blobtools nodesdb --nodes data/nodes.dmp --names data/names.dmp
 
 %environment
     export LC_ALL=C.UTF-8
@@ -91,11 +96,13 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     metaspades.py --version  
     echo -ne "Flye " && flye --version 
     echo -ne "Masurca " && masurca --version
-    echo -ne "Minimap2 " && minimap2 --version
+    echo -ne "FMLRC " && fmlrc --version
     echo -ne "Racon " && racon --version
     medaka --version
     pilon --version
-    echo -ne "Minimap2 " && minimap2 --version 
+    echo -ne "Minimap2 " && minimap2 --version
+    samtools --version | grep "samtools 1" 
+    echo -ne "Blobtools " && blobtools --version
     bbduk.sh --version > tmp 2>&1 && grep "version " tmp && rm tmp
     
     # Assembly assessment

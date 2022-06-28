@@ -7,7 +7,7 @@ import library as lib
 The assembly module of the Fungiflow pipeline.
 """
 
-def find_adapters(input_args,filenames):
+def find_adapters(input_args,filenames,adapter_path):
     """
     Finds adapter sequences in raw read files.  
     
@@ -15,12 +15,12 @@ def find_adapters(input_args,filenames):
     Outputs:    FASTA file containing identified adapter sequences.
     """
 
-    stdout = os.path.join(filenames.adapter_path,f"adapter_{input_args.array}.out")
-    stderr = os.path.join(filenames.adapter_path,f"adapter_{input_args.array}.err")
+    stdout = os.path.join(adapter_path,f"adapter_{input_args.array}.out")
+    stderr = os.path.join(adapter_path,f"adapter_{input_args.array}.err")
 
     lib.print_h(f"Identifying adapter sequences in {input_args.array} reads")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.forward_reads,filenames.adapter_file]
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.reverse_reads,filenames.adapter_file]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.shortf,filenames.adapter_file]
+    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.shortr,filenames.adapter_file]
     try:
         print(" ".join(cmd1))
         lib.execute(cmd1,stdout,stderr)
@@ -43,7 +43,7 @@ def trimmomatic(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}.err")
 
     lib.print_h(f"Trimming Illumina {input_args.array} reads with Trimmomatic")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"TrimmomaticPE","-threads",filenames.cpus,"-trimlog",filenames.log_file,filenames.forward_reads,filenames.reverse_reads,filenames.trimmedf,filenames.utrimmedf,filenames.trimmedr,filenames.utrimmedr,f"ILLUMINACLIP:{filenames.adapter_file}:2:30:10:4:4:/true","TRAILING:9","SLIDINGWINDOW:4:15","MINLEN:36"]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"TrimmomaticPE","-threads",input_args.cpus,"-trimlog",filenames.trimlog_file,filenames.shortf,filenames.shortr,filenames.trimmedf,filenames.utrimmedf,filenames.trimmedr,filenames.utrimmedr,f"ILLUMINACLIP:{filenames.adapter_file}:2:30:10:4:4:/true","TRAILING:9","SLIDINGWINDOW:4:15","MINLEN:36"]
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
@@ -92,10 +92,10 @@ def long_read_trim(input_args,filenames,trimmed_path):
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
     # Length-filtering trimmed long reads
     filenames.nanopore_length_filtered = os.path.join("trimmed",filenames.nanopore.split(".")[0]+"_lf.fq")
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={input_args.nanopore_trimmed}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
+    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
     # Converting long reads to FASTA format
     filenames.nanopore_fasta = os.path.join("trimmed",filenames.nanopore.split(".")[0]+"_lf.fasta")
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={input_args.nanopore_length_filtered}",f"out={filenames.nanopore_fasta}"]
+    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={filenames.nanopore_length_filtered}",f"out={filenames.nanopore_fasta}"]
     # mapping short reads
     filenames.short_mapped_2_long = os.path.join("trimmed",input_args.array+"mapped.npy")
     cmd4 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
@@ -241,8 +241,8 @@ def kraken2(input_args,filenames,kraken_path):
 
     lib.print_h(f"Performing Kraken2 analysis of trimmed reads for {input_args.array}")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2","--db",input_args.kraken2_db,\
-        "--threads",input_args.cpus,"--use-filenames","--report",filenames.kreport,"--classified-out",filenames.classified,\
-            "--unclassified-out",filenames.unclassified,"--paired",filenames.trimmedf,filenames.trimmedr]
+        "--threads",input_args.cpus,"--use-filenames","--report",filenames.kreport,"--classified-out",filenames.k_classified,\
+            "--unclassified-out",filenames.k_unclassified,"--paired",filenames.trimmedf,filenames.trimmedr]
     print(" ".join(cmd1))    
     try:
         lib.execute(cmd1,stdout,stderr)
@@ -259,9 +259,9 @@ def main(input_args,filenames):
     lib.make_path(adapter_path)
 
     filenames.adapter_file = os.path.join("adapters",f"{str(input_args.array)}_adapters.fasta")
-    if lib.file_exists_bool(filenames.adapter_file,0,"Adapters already identified! Skipping...","Searching for adapter sequences in short reads") is False:
-        lib.find_adapters(input_args,filenames)
-        lib.lib.file_exists(filenames.adapter_file,0,"Adapters identified!","Adapters not successfully extracted... check the logs and your inputs")
+    if lib.file_exists(filenames.adapter_file,"Adapters already identified! Skipping...","Searching for adapter sequences in short reads") is False:
+        find_adapters(input_args,filenames,adapter_path)
+        lib.file_exists(filenames.adapter_file,"Adapters identified!","Adapters not successfully extracted... check the logs and your inputs")
 
     trimmed_path = "trimmed"
     lib.make_path(trimmed_path)
@@ -272,16 +272,16 @@ def main(input_args,filenames):
     filenames.utrimmedr = os.path.join(trimmed_path,f"{input_args.array}_reverse_trimmed_2U.fq.gz")
     filenames.trimlog_file = os.path.join(trimmed_path,f"{input_args.array}_trimmomatic.log")
 
-    if lib.file_exists_bool(filenames.trimmedf,os.stat(filenames.trimmedf).st_size > (0.6 * os.stat(input_args.illumina_f).st_size),"Forward reads already trimmed! Skipping...",) is False and \
-        lib.file_exists_bool(filenames.trimmedr,os.stat(filenames.trimmedr).st_size > (0.6 * os.stat(input_args.illumina_r).st_size),"Reverse reads already trimmed! Skipping...",) is False:
-        lib.trimmomatic(input_args,filenames,trimmed_path)
-        lib.file_exists(filenames.trimmedf,os.stat(filenames.trimmedf).st_size > (0.6 * os.stat(input_args.illumina_f).st_size),"Forward reads trimmed successfully!","Forward reads not trimmed... check the logs and your inputs")
-        lib.file_exists(filenames.trimmedr,os.stat(filenames.trimmedr).st_size > (0.6 * os.stat(input_args.illumina_r).st_size),"Reverse reads trimmed successfully!","Reverse reads not trimmed... check the logs and your inputs")
+    if lib.file_exists_bool(filenames.trimmedf,filenames.shortf,0.6,"Forward reads already trimmed! Skipping...","") is False and \
+        lib.file_exists_bool(filenames.trimmedr,filenames.shortr,0.6,"Reverse reads already trimmed! Skipping...","") is False:
+        trimmomatic(input_args,filenames,trimmed_path)
+        lib.file_exists(filenames.trimmedf,"Forward reads trimmed successfully!","Forward reads not trimmed... check the logs and your inputs")
+        lib.file_exists(filenames.trimmedr,"Reverse reads trimmed successfully!","Reverse reads not trimmed... check the logs and your inputs")
 
 
-
-   # if input_args.nanopore is:
-    #    long_read_trim(input_args,filenames,trimmed_path)
+    if input_args.nanopore is not None:
+        filenames.nanopore = input_args.nanopore
+        long_read_trim(input_args,filenames,trimmed_path)
 
     if len(input_args.kraken2_db) > 0:
 
@@ -298,12 +298,11 @@ def main(input_args,filenames):
         filenames.k_unclassifiedf = os.path.join(kraken2_path,f"{input_args.array}_unclass_1.fq")
         filenames.k_unclassifiedr = os.path.join(kraken2_path,f"{input_args.array}_unclass_2.fq")
 
-        if lib.file_exists_bool(kraken2_path,os.stat(filenames.k_unclassifiedf).st_size > (0.6 * os.stat(filenames.trimmedf).st_size),"Forward trimmed reads already filtered by Kraken2! Skipping...","") is False \
-        and lib.file_exists_bool(kraken2_path,os.stat(filenames.k_unclassifiedr).st_size > (0.6 * os.stat(filenames.trimmedr).st_size),"Reverse trimmed reads already filtered by Kraken2! Skipping...","") is False:
-            "Filtering trimmed reads by taxonomy with Kraken2"
+        if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads already filtered by Kraken2! Skipping...","") is False \
+        and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads already filtered by Kraken2! Skipping...","") is False:
             kraken2(input_args,filenames,kraken2_path)
-            if lib.file_exists_bool(kraken2_path,os.stat(filenames.k_unclassifiedf).st_size > (0.6 * os.stat(filenames.trimmedf).st_size),"Forward trimmed reads successfully filtered by Kraken2!","Forward trimmed reads not filtered... check the logs and your inputs") is True \
-            and lib.file_exists_bool(kraken2_path,os.stat(filenames.k_unclassifiedr).st_size > (0.6 * os.stat(filenames.trimmedr).st_size),"Reverse trimmed reads successfully filtered by Kraken2!","Reverse trimmed reads not filtered... check the logs and your inputs") is True:
+            if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads already filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False \
+            and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads already filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False:
                 filenames.trimmedf = filenames.k_unclassifiedf
                 filenames.trimmedr = filenames.k_unclassifiedr
 
@@ -317,12 +316,13 @@ def main(input_args,filenames):
     lib.make_path(assembly_path)
     filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
 
+    # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
-        if lib.file_exists_bool(filenames.assembly_fasta,0,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye") is False:
+        if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye") is False:
             assembly_hybrid(input_args,filenames,assembly_path)
             hybrid_polish(input_args,filenames,assembly_path)
     else:
-        if lib.file_exists_bool(filenames.assembly_fasta,0,"Reads already assembled! Skipping...","Performing short read assembly with SPADes") is False:
+        if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing short read assembly with SPADes") is False:
             assembly_short(input_args,filenames,assembly_path)
 
-    lib.file_exists(filenames.assembly_fasta,0,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
+    lib.file_exists(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")

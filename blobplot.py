@@ -48,8 +48,8 @@ def minimap2(input_args,filenames,blobpath):
     Output:     BAM mapping file
     """
 
-    stdout = os.path.join(blobpath,f"{array}_map.out")
-    stderr = os.path.join(blobpath,f"{array}_map.err")
+    stdout = os.path.join(blobpath,f"{input_args.array}_map.out")
+    stderr = os.path.join(blobpath,f"{input_args.array}_map.err")
 
     cmd1 = ["singularity","exec",input_args.singularity_image,"minimap2","-ax","sr",filenames.assembly_fasta,filenames.trimmedf,filenames.trimmedr,"|","samtools","sort","-@",input_args.cpus,"-o",filenames.bamfile]
     print(" ".join(cmd1))
@@ -68,8 +68,8 @@ def index(input_args,filenames,blobpath):
     Output:     BAI index file
     """
 
-    stdout = os.path.join(blobpath,f"{array}_index.out")
-    stderr = os.path.join(blobpath,f"{array}_index.err")
+    stdout = os.path.join(blobpath,f"{input_args.array}_index.out")
+    stderr = os.path.join(blobpath,f"{input_args.array}_index.err")
 
     cmd1 = ["singularity","exec",input_args.singularity_image,"samtools","index","-@",input_args.cpus,filenames.bamfile,filenames.outfile]
     print(" ".join(cmd1))
@@ -87,8 +87,8 @@ def megablast(input_args,filenames,blobpath):
     Output:     megablast results OUT file
     """
 
-    stdout = os.path.join(blobpath,f"{array}_blast.out")
-    stderr = os.path.join(blobpath,f"{array}_blast.err")
+    stdout = os.path.join(blobpath,f"{input_args.array}_blast.out")
+    stderr = os.path.join(blobpath,f"{input_args.array}_blast.err")
         
     cmd1 = ["singularity","exec",input_args.singularity_image,"blastn","-task","megablast","-query",filenames.assembly_fasta,"-db",input_args.nt_db,"-outfmt","\"6 qseqid staxids bitscore std\"","-max_target_seqs","1","-max_hsps","1","-num_threads",input_args.cpus,"-evalue","1e-25","-out",filenames.megablast_out]
     print(" ".join(cmd1))
@@ -106,8 +106,8 @@ def blobtools(input_args,filenames,blobpath):
     Output:     blobplot JSON file, blobplot PNG images
     """
 
-    stdout = os.path.join(blobpath,f"{array}_blob.out")
-    stderr = os.path.join(blobpath,f"{array}_blob.err")
+    stdout = os.path.join(blobpath,f"{input_args.array}_blob.out")
+    stderr = os.path.join(blobpath,f"{input_args.array}_blob.err")
 
     cmd1 = ["singularity","exec",input_args.singularity_image,"blobtools-blobtools_v1.1.1/blobtools","create","-i",filenames.assembly_fasta,"-b",filenames.bamfile,"-t",filenames.megablast_out,"-o",filenames.blob_json]
     cmd2 = ["singularity","exec",input_args.singularity_image,"blobtools-blobtools_v1.1.1/blobtools","view","-i",filenames.blob_json]
@@ -155,7 +155,7 @@ def main(input_args,filenames):
     print("Blobbing and plotting")
     blobtools(input_args,filenames,blobpath)
     print(f"Blobplot script completed in {datetime.datetime.now() - start_time}")
-    lib.file_exists(filenames.blob_json,0,"Blobtools successfully generated files","Blobtools failed.")
+    lib.file_exists(filenames.blob_json,"Blobtools successfully generated files","Blobtools failed.")
 
 if __name__ == '__main__':
     main()

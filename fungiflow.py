@@ -55,28 +55,27 @@ def get_args():
         if len(sys.argv) < 6:
             parser.print_help(sys.stderr)
             lib.print_e("Parser expecting 6 or more arguments")
-            exit(1)
+            sys.exit()
     except argparse.ArgumentError:
         parser.print_help(sys.stderr)
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
-        exit(1)
+        sys.exit()
 
-    def __str__(self):
-        return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
+    for arg in parser:
+        print(f"{arg} \n")
 
     return parser.parse_args()
 
 ### Begin Main Script ###
 def main():
     
-    args = get_args()
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂\n")
     start_time = datetime.datetime.now()
+    args = get_args()
     os.chdir(args.directory)
-    args
 
     # Sets up class object for filenames
-    names = lib.Files(args.array)
+    names = lib.Files(args.illumina_f,args.illumina_r)
 
     # Running 'ASSEMBLY' module
     assembly.main(args,names)

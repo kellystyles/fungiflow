@@ -147,10 +147,10 @@ def main(input_args,filenames):
     filenames.quast_report = os.path.join(quast_out,"transposed_report.tsv")
     lib.make_path(quast_out)
     filenames.funannotate_gff = os.path.join(funannotate_path,"predict_results",f"{args.array}.gff3")
-    if lib.file_exists_bool(filenames.quast_report,0,"Quast successfully analysed the assembly!",) is False:
+    if lib.file_exists(filenames.quast_report,"Quast successfully analysed the assembly!",) is False:
         quast(input_args,filenames,quast_out)
         quast_df = parse_quast(filenames.quast_report,input_args.array)
-        lib.file_exists(filenames.quast_report,0,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
+        lib.file_exists(filenames.quast_report,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
 
     if len(input_args.its_db) > 0:
             
@@ -164,23 +164,23 @@ def main(input_args,filenames):
         its_full = os.path.join(itsx_output_path,f"{input_args.array}.full.fasta")
         its_2 = os.path.join(itsx_output_path,f"{input_args.array}.ITS2.fasta")
         its_1 = os.path.join(itsx_output_path,f"{input_args.array}.ITS1.fasta")
-        if lib.file_exists_bool(its_full,0,"ITSx already extracted the ITS sequence! Skipping",) is False:
+        if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping",) is False:
             itsx(input_args,filenames,itsx_output_path)
             lib.make_path(blastn_output_path)
-            if lib.file_exists_bool(its_full,0,"ITSx successfully extracted the full ITS sequence!","ITSx failed to extract the full ITS sequence. Checking for ITS2") == True:
+            if lib.file_exists(its_full,"ITSx successfully extracted the full ITS sequence!","ITSx failed to extract the full ITS sequence. Checking for ITS2") == True:
                 filenames.its_fasta = its_full
                 blastn(input_args,filenames,blastn_output_path)
-                if lib.file_exists_bool(filenames.blast_out,0,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
+                if lib.file_exists(filenames.blast_out,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
                     its_df = parse_blastp(filenames.blast_out,input_args.array)
-            elif lib.file_exists_bool(its_2,0,"ITSx successfully extracted the ITS2 sequence!","ITSx failed to extract the ITS2 sequence. Checking for ITS1") is True:
+            elif lib.file_exists(its_2,"ITSx successfully extracted the ITS2 sequence!","ITSx failed to extract the ITS2 sequence. Checking for ITS1") is True:
                 filenames.its_fasta = its_2
                 blastn(input_args,filenames,blastn_output_path)
-                if lib.file_exists_bool(filenames.blast_out,0,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
+                if lib.file_exists(filenames.blast_out,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
                     its_df = parse_blastp(filenames.blast_out,input_args.array)
-            elif lib.file_exists_bool(its_1,0,"ITSx successfully extracted the ITS1 sequence!","ITSx failed... check the logs and your inputs") is True:
+            elif lib.file_exists(its_1,"ITSx successfully extracted the ITS1 sequence!","ITSx failed... check the logs and your inputs") is True:
                 filenames.its_fasta = its_1
                 blastn(input_args,filenames,blastn_output_path)
-                if lib.file_exists_bool(filenames.blast_out,0,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
+                if lib.file_exists(filenames.blast_out,f"BLASTn successfully searched {filenames.its_fasta} against the ITS_RefSeq database!",f"BLASTn failed to search {filenames.its_fasta}... check the logs and your inputs") is True:
                     its_df = parse_blastp(filenames.blast_out,input_args.array)
     else:
         lib.print_h("Skipping taxonomy lookup of isolate")
@@ -194,9 +194,9 @@ def main(input_args,filenames):
         filenames.antismash_index = os.path.join(antismash_out,"index.html")
         if os.path.exists(antismash_out) is False:
             lib.make_path(antismash_out)
-        if lib.file_exists_bool(filenames.antismash_index,0,"antiSMASH already analysed the assembly!",) is False:
+        if lib.file_exists(filenames.antismash_index,"antiSMASH already analysed the assembly!",) is False:
             antismash(input_args,filenames,antismash_out)
-            lib.file_exists(filenames.antismash_index,0,"antiSMASH successfully analysed the assembly!","antiSMASH failed... check the logs and your inputs")
+            lib.file_exists(filenames.antismash_index,"antiSMASH successfully analysed the assembly!","antiSMASH failed... check the logs and your inputs")
     else:
         lib.print_n("Skipping BGC search with anitSMASH. Use '--antismash' as a script argument if you would like to do this.")
 
@@ -215,4 +215,4 @@ def main(input_args,filenames):
         lib.make_path(results_path)
     filenames.csv_output = os.path.join(results_path,f"{input_args.array}_results.csv")
     final_df.to_csv(filenames.csv_output, index=False)
-    lib.file_exists(filenames.csv_output,0,"Final results report successfully generated","Final results report was not generated")
+    lib.file_exists(filenames.csv_output,"Final results report successfully generated","Final results report was not generated")

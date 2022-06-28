@@ -8,9 +8,9 @@ Helper functions for the Fungiflow pipeline.
 
 # Creating the Class for the workflow filepaths
 class Files:
-    def __init__(self, array):
-        self.short_raw_f = os.path.join("raw",f"{array}_R1.fq.gz")
-        self.short_raw_r = os.path.join("raw",f"{array}_R2.fq.gz")
+    def __init__(self, short_forward, short_reverse):
+        self.shortf = short_forward
+        self.shortr = short_reverse
     def __str__(self):
         return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
 
@@ -24,32 +24,29 @@ def make_path(path):
     except FileExistsError:
         pass
 
-def file_exists(file,size,success_message,error_message):
+def file_exists(file,success_message,error_message):
     """
     Check if file exists and is not empty.
-    Returns error message if the above is not True.
+    Returns error message if the above is not True and will exit script.
     """
-    try:
-        if os.stat(file).st_size > int(size):
-            print(success_message)
-        
-    except FileNotFoundError:
-        #exit(error_message)
+    if os.path.isfile(file) is True and os.stat(file).st_size > 0:
+        print(success_message)
+    else:
         print(error_message)
+        sys.exit()
 
-def file_exists_bool(file,size,success_message,error_message):
+def file_exists_bool(filea,fileb,modifier,success_message,error_message):
     """
-    Check if file exists and is not empty.
+    Check if fileA exists and is not smaller than fileB by a modifier value.
     Returns error message if the above is not True.
     """
     try:
-        if os.stat(file).st_size > int(size):
+        if os.stat(filea).st_size > (os.stat(fileb).st_size * modifier):
             print(success_message)
             return True
     except FileNotFoundError:
         print(error_message)
-        #return False
-        return True
+        return False
 
 def execute(command,stdout,stderr):
     """
@@ -62,8 +59,8 @@ def execute(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
-    #with open(stdout, "wt") as out, open(stderr, "wt") as err:
-     #   subprocess.run(command,stdout=out,stderr=err)
+    with open(stdout, "wt") as out, open(stderr, "wt") as err:
+        subprocess.run(command,stdout=out,stderr=err)
 
 def execute_shell(command,stdout,stderr):
     """
@@ -76,8 +73,8 @@ def execute_shell(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
-    #with open(stdout, "wt") as out, open(stderr, "wt") as err:
-     #   subprocess.run(command,shell=True,stdout=out,stderr=err)
+    with open(stdout, "wt") as out, open(stderr, "wt") as err:
+        subprocess.run(command,shell=True,stdout=out,stderr=err)
         
 # Some functions that print pretty terminal output using ANSI codes
 

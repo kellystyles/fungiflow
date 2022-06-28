@@ -105,18 +105,18 @@ def main(input_args,filenames):
     funannotate_sort_fasta = f"{input_args.array}_sorted.fasta"
     funannotate_mask_fasta = f"{input_args.array}_masked.fasta"
     funannotate_gbk = os.path.join("predict_results",f"{input_args.array}.gbk")
-    if lib.file_exists_bool(funannotate_clean_fasta,0,"Assembly already cleaned by Funannotate! Skipping...",) is False:
+    if lib.file_exists(funannotate_clean_fasta,"Assembly already cleaned by Funannotate! Skipping...",) is False:
         funannotate_clean(input_args,filenames.assembly_fasta,funannotate_clean_fasta)
-        lib.file_exists(funannotate_clean_fasta,0,"Assembly successfuly cleaned by Funannotate","Funannotate clean failed... check the logs and your inputs")
-    if lib.file_exists_bool(funannotate_sort_fasta,0,"Assembly successfuly sorted by Funannotate! Skipping...",) is False:
+        lib.file_exists(funannotate_clean_fasta,"Assembly successfuly cleaned by Funannotate","Funannotate clean failed... check the logs and your inputs")
+    if lib.file_exists(funannotate_sort_fasta,"Assembly successfuly sorted by Funannotate! Skipping...",) is False:
         funannotate_sort(input_args,funannotate_clean_fasta,funannotate_sort_fasta)
-        lib.file_exists(funannotate_sort_fasta,0,"Assembly successfuly sorted by Funannotate","Funannotate sort failed... check the logs and your inputs")
-    if lib.file_exists_bool(funannotate_mask_fasta,0,"Assembly already masked by Funannotate! Skipping...",) is False:
+        lib.file_exists(funannotate_sort_fasta,"Assembly successfuly sorted by Funannotate","Funannotate sort failed... check the logs and your inputs")
+    if lib.file_exists(funannotate_mask_fasta,"Assembly already masked by Funannotate! Skipping...",) is False:
         funannotate_mask(input_args,funannotate_sort_fasta,funannotate_mask_fasta)
-        lib.file_exists(funannotate_mask_fasta,0,"Assembly successfuly masked by Funannotate","Funannotate mask failed... check the logs and your inputs")
-    if lib.file_exists_bool(funannotate_gbk,0,"Assembly genes already predicted with Funannotate! Skipping...",) is False:
+        lib.file_exists(funannotate_mask_fasta,"Assembly successfuly masked by Funannotate","Funannotate mask failed... check the logs and your inputs")
+    if lib.file_exists(funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...",) is False:
         funannotate_predict(input_args,cwd,funannotate_mask_fasta)
-        lib.file_exists(funannotate_gbk,0,"Assembly genes successfully predicted with Funannotate","Funannotate predict failed... check the logs and your inputs")
+        lib.file_exists(funannotate_gbk,"Assembly genes successfully predicted with Funannotate","Funannotate predict failed... check the logs and your inputs")
     lib.print_n("Changing back to main directory")
     os.chdir(input_args.directory)
 
