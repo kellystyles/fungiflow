@@ -50,28 +50,21 @@ def get_args():
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
         parser.add_argument('-b', '--blobplot', action='store_true', 
-                            help='Prepare blobplots of assembly')        
-
-        if len(sys.argv) < 6:
-            parser.print_help(sys.stderr)
-            lib.print_e("Parser expecting 6 or more arguments")
-            sys.exit()
+                            help='Prepare blobplots of assembly')            
     except argparse.ArgumentError:
-        parser.print_help(sys.stderr)
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
+        parser.print_help(sys.stderr)
         sys.exit()
-
-    for arg in parser:
-        print(f"{arg} \n")
 
     return parser.parse_args()
 
 ### Begin Main Script ###
 def main():
-    
-    lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂\n")
-    start_time = datetime.datetime.now()
     args = get_args()
+    lib.print_tu("⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂  \n")
+    start_time = datetime.datetime.now()
+    print(args)
+    
     os.chdir(args.directory)
 
     # Sets up class object for filenames
