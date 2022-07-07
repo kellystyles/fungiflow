@@ -86,21 +86,16 @@ def long_read_trim(input_args,filenames,trimmed_path):
     stdout = os.path.join(trimmed_path,f"{input_args.array}_long_read_trim.out")
     stderr = os.path.join(trimmed_path,f"{input_args.array}_long_read_trim.err")
 
-    lib.print_h(f"Preparing long reads, {input_args.nanopore}, for assembly")
+    lib.print_h(f"Preparing long reads {input_args.nanopore} for assembly")
     # Trimming long reads with PORECHOP
-    filenames.nanopore_trimmed = os.path.join("trimmed",filenames.nanopore.split(".")[0]+".fq")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
     # Length-filtering trimmed long reads
-    filenames.nanopore_length_filtered = os.path.join("trimmed",filenames.nanopore.split(".")[0]+"_lf.fq")
     cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
     # Converting long reads to FASTA format
-    filenames.nanopore_fasta = os.path.join("trimmed",filenames.nanopore.split(".")[0]+"_lf.fasta")
     cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={filenames.nanopore_length_filtered}",f"out={filenames.nanopore_fasta}"]
     # mapping short reads
-    filenames.short_mapped_2_long = os.path.join("trimmed",input_args.array+"mapped.npy")
     cmd4 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
     # Correcting long reads with FMLRC
-    filenames.nanopore_corr = os.path.join("trimmed",filenames.nanopore.split(".")[0]+"corr.fasta")
     cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc","-p",input_args.cpus,filenames.short_mapped_2_long,filenames.nanopore_fasta,filenames.nanopore_corr]
     
     print(" ".join(cmd1))
@@ -188,23 +183,18 @@ def hybrid_polish(input_args,filenames,assembly_path):
     
     # Polishing FLYE assembly
     lib.print_h(f"Polishing {input_args.assembly_fasta}")
-    filenames.nanopore_sam = os.path.join(assembly_path,filenames.nanopore.split(".")[0]+".sam")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"minimap2","-x","map-ont",filenames.assembly_fasta,filenames.nanopore_length_filtered,">",filenames.nanopore_sam]
     racon_path = os.path.join(assembly_path,"racon")
     lib.make_path(racon_path)
     os.chdir(racon_path)
     cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"racon","--no-trimming","-t",input_args.cpus,filenames.nanopore_length_filtered,filenames.nanopore_sam,filenames.assembly_fasta]
-    filenames.racon_assembly = os.path.join(racon_path,"*.fa*") # find out actual output filename
     medaka_path = os.path.join(assembly_path,"medaka")
     lib.make_path(medaka_path)
     os.chdir(medaka_path)
-    filenames.medaka_assembly = os.path.join(medaka_path,"*.fa*") # find out actual output filename
     cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"medaka_consenus","-i",filenames.nanopore_length_filtered,"-d",filenames.racon_assembly,"-o","medaka","-t",input_args.cpus,"-m","r941_min_hac_g511"]
     os.chdir(input_args.directory)
     cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","index",filenames.assembly_fasta]
-    filenames.assembly_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+".bam")
     cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","mem","-t",input_args.cpus,filenames.medaka_assembly,filenames.trimmedf,filenames.trimmedr,">",filenames.assembly_bam]
-    filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam")    
     cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","sort","-@",input_args.cpus,"-o",filenames.assembly_sorted_bam,filenames.assembly_bam]
     cmd6 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","index","-@",input_args.cpus,filenames.assembly_sorted_bam]
     cmd7 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"java",f"-Xmx{input_args.mem}G","-jar","pilon","--genome",input_args.assembly_fasta,"--bam",filenames.assembly_sorted_bam,"--outdir",assembly_path]
@@ -278,9 +268,13 @@ def main(input_args,filenames):
         lib.file_exists(filenames.trimmedf,"Forward reads trimmed successfully!","Forward reads not trimmed... check the logs and your inputs")
         lib.file_exists(filenames.trimmedr,"Reverse reads trimmed successfully!","Reverse reads not trimmed... check the logs and your inputs")
 
-
     if input_args.nanopore is not None:
         filenames.nanopore = input_args.nanopore
+        filenames.nanopore_trimmed = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+".fq")
+        filenames.nanopore_length_filtered = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fq")
+        filenames.nanopore_fasta = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fasta")
+        filenames.short_mapped_2_long = os.path.join(trimmed_path,input_args.array+"mapped.npy")
+        filenames.nanopore_corr = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"corr.fasta")
         long_read_trim(input_args,filenames,trimmed_path)
 
     if len(input_args.kraken2_db) > 0:
@@ -319,6 +313,11 @@ def main(input_args,filenames):
     # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye") is False:
+            filenames.nanopore_sam = os.path.join(assembly_path,filenames.nanopore.split(".")[0]+".sam")
+            filenames.racon_assembly = os.path.join(racon_path,"*.fa*") # find out actual output filename
+            filenames.medaka_assembly = os.path.join(medaka_path,"*.fa*") # find out actual output filename
+            filenames.assembly_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+".bam")
+            filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam") 
             assembly_hybrid(input_args,filenames,assembly_path)
             hybrid_polish(input_args,filenames,assembly_path)
     else:

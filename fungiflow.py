@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys, argparse
+import sys
+import argparse
 import datetime
 import library as lib
 import assembly,blobplot,funannotate,post_analysis

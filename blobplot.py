@@ -128,7 +128,7 @@ def main(input_args,filenames):
     start_time = datetime.datetime.now()
     if input_args is None:
         input_args = get_args()
-        filenames = Files(input_args.trimmed_f.split("_")[0])
+        filenames = lib.Files(input_args.trimmed_f.split("_")[0])
         filenames.trimmedf = input_args.trimmed_f
         filenames.trimmedr = input_args.trimmed_r
     
