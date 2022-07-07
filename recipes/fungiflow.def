@@ -44,6 +44,11 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     mamba clean -a
 
     # Installing specific software
+    # - Porechop
+    git clone https://github.com/rrwick/Porechop.git
+    cd Porechop
+    python3 setup.py install
+    cd /
     # - BBMap suite
     wget https://versaweb.dl.sourceforge.net/project/bbmap/BBMap_38.96.tar.gz 
     tar xvzf BBMap_38.96.tar.gz && rm BBMap_38.96.tar.gz
@@ -89,6 +94,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 
     # Quality control
     echo -ne "Trimmomatic " && TrimmomaticPE -version
+    porechop -v
     fastqc --version 
     NanoComp --version    
 

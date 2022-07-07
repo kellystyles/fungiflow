@@ -231,7 +231,7 @@ def kraken2(input_args,filenames,kraken_path):
 
     lib.print_h(f"Performing Kraken2 analysis of trimmed reads for {input_args.array}")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2","--db",input_args.kraken2_db,\
-        "--threads",input_args.cpus,"--use-filenames","--report",filenames.kreport,"--classified-out",filenames.k_classified,\
+        "--threads",input_args.cpus,"--use-names","--report",filenames.kreport,"--classified-out",filenames.k_classified,\
             "--unclassified-out",filenames.k_unclassified,"--paired",filenames.trimmedf,filenames.trimmedr]
     print(" ".join(cmd1))    
     try:
@@ -256,10 +256,10 @@ def main(input_args,filenames):
     trimmed_path = "trimmed"
     lib.make_path(trimmed_path)
 
-    filenames.trimmedf = os.path.join(trimmed_path,f"{input_args.array}_forward_trimmed_1P.fq.gz")
-    filenames.trimmedr = os.path.join(trimmed_path,f"{input_args.array}_reverse_trimmed_2P.fq.gz")
-    filenames.utrimmedf = os.path.join(trimmed_path,f"{input_args.array}_forward_trimmed_1U.fq.gz")
-    filenames.utrimmedr = os.path.join(trimmed_path,f"{input_args.array}_reverse_trimmed_2U.fq.gz")
+    filenames.trimmedf = os.path.join(trimmed_path,f"{input_args.array}_trimmed_1P.fq.gz")
+    filenames.trimmedr = os.path.join(trimmed_path,f"{input_args.array}_trimmed_2P.fq.gz")
+    filenames.utrimmedf = os.path.join(trimmed_path,f"{input_args.array}_trimmed_1U.fq.gz")
+    filenames.utrimmedr = os.path.join(trimmed_path,f"{input_args.array}_trimmed_2U.fq.gz")
     filenames.trimlog_file = os.path.join(trimmed_path,f"{input_args.array}_trimmomatic.log")
 
     if lib.file_exists_bool(filenames.trimmedf,filenames.shortf,0.6,"Forward reads already trimmed! Skipping...","") is False and \
@@ -286,17 +286,17 @@ def main(input_args,filenames):
         lib.make_path(kraken2_path)
         filenames.kreport = os.path.join(kraken2_path,f"{input_args.array}.report")
         filenames.k_classified = os.path.join(kraken2_path,f"{input_args.array}_class#.fq")
-        filenames.k_unclassified = os.path.join(kraken2_path,f"{input_args.array}_class#.fq")
+        filenames.k_unclassified = os.path.join(kraken2_path,f"{input_args.array}_unclass#.fq")
         filenames.k_classifiedf = os.path.join(kraken2_path,f"{input_args.array}_class_1.fq")
         filenames.k_classifiedr = os.path.join(kraken2_path,f"{input_args.array}_class_2.fq")
         filenames.k_unclassifiedf = os.path.join(kraken2_path,f"{input_args.array}_unclass_1.fq")
         filenames.k_unclassifiedr = os.path.join(kraken2_path,f"{input_args.array}_unclass_2.fq")
 
-        if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads already filtered by Kraken2! Skipping...","") is False \
-        and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads already filtered by Kraken2! Skipping...","") is False:
+        if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Trimmed reads already filtered by Kraken2! Skipping...","") is False \
+        and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Trimmed reads already filtered by Kraken2! Skipping...","") is False:
             kraken2(input_args,filenames,kraken2_path)
-            if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads already filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False \
-            and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads already filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False:
+            if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False \
+            and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False:
                 filenames.trimmedf = filenames.k_unclassifiedf
                 filenames.trimmedr = filenames.k_unclassifiedr
 
