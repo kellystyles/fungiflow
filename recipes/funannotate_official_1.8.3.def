@@ -18,11 +18,21 @@ From: nextgenusfs/funannotate
     export GENEMARK_PATH="~/local/bin/" >> ~/.bashrc
     wget https://github.com/kellystyles/useful_stuff/blob/main/gm_key_64.gz
     zcat gm_key_64.gz > ~/.gm_key
+
+    # InterproScan install
+    mkdir my_interproscan
+    cd my_interproscan
+    wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.56-89.0/interproscan-5.56-89.0-64-bit.tar.gz
+    tar -pxvzf interproscan-5.56-89.0-*-bit.tar.gz
+    python3 initial_setup.py
+    export GENEMARK_PATH="~/local/bin/" >> ~/.bashrc
     
 %test
     cd ~/local/bin/GeneMark-E-tests/EP
     mkdir test && cd test
     gmes_petap.pl --seq ../input/genome.fasta --EP --dbep ../input/proteins.fasta --verbose --cores=8 --max_intergenic 10000
+    interproscan.sh -i test_all_appl.fasta -f tsv -dp
+    interproscan.sh -i test_all_appl.fasta -f tsv
 
 %help
 Built from Docker Hub nextgenusfs/funannotate

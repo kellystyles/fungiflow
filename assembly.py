@@ -89,10 +89,10 @@ def long_read_trim(input_args,filenames,trimmed_path):
     lib.print_h(f"Preparing long reads {input_args.nanopore} for assembly")
     # Trimming long reads with PORECHOP
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
-    # Length-filtering trimmed long reads
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
     # Converting long reads to FASTA format
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={filenames.nanopore_length_filtered}",f"out={filenames.nanopore_fasta}"]
+    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}"] 
+    # Length-filtering trimmed long reads
+    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
     # mapping short reads
     cmd4 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
     # Correcting long reads with FMLRC
@@ -271,10 +271,10 @@ def main(input_args,filenames):
     if input_args.nanopore is not None:
         filenames.nanopore = input_args.nanopore
         filenames.nanopore_trimmed = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+".fq")
-        filenames.nanopore_length_filtered = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fq")
-        filenames.nanopore_fasta = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fasta")
-        filenames.short_mapped_2_long = os.path.join(trimmed_path,input_args.array+"mapped.npy")
-        filenames.nanopore_corr = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"corr.fasta")
+        filenames.nanopore_fasta = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+".fa")
+        filenames.nanopore_length_filtered = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fa")
+        filenames.short_mapped_2_long = os.path.join(trimmed_path,input_args.array+"_mapped.npy")
+        filenames.nanopore_corr = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_corr.fa")
         long_read_trim(input_args,filenames,trimmed_path)
 
     if len(input_args.kraken2_db) > 0:
