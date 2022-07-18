@@ -90,9 +90,9 @@ def long_read_trim(input_args,filenames,trimmed_path):
     # Trimming long reads with PORECHOP
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
     # Converting long reads to FASTA format
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}"] 
+    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh","-f",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}","ignorebadquality"] 
     # Length-filtering trimmed long reads
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
+    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh","-f",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
     # mapping short reads
     cmd4 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
     # Correcting long reads with FMLRC
