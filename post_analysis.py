@@ -150,7 +150,7 @@ def main(input_args,filenames):
     if lib.file_exists(filenames.quast_report,"Quast successfully analysed the assembly!",) is False:
         quast(input_args,filenames,quast_out)
         quast_df = parse_quast(filenames.quast_report,input_args.array)
-        lib.file_exists(filenames.quast_report,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
+        lib.file_exists_exit(filenames.quast_report,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
 
     if len(input_args.its_db) > 0:
             
@@ -196,7 +196,7 @@ def main(input_args,filenames):
             lib.make_path(antismash_out)
         if lib.file_exists(filenames.antismash_index,"antiSMASH already analysed the assembly!",) is False:
             antismash(input_args,filenames,antismash_out)
-            lib.file_exists(filenames.antismash_index,"antiSMASH successfully analysed the assembly!","antiSMASH failed... check the logs and your inputs")
+            lib.file_exists_exit(filenames.antismash_index,"antiSMASH successfully analysed the assembly!","antiSMASH failed... check the logs and your inputs")
     else:
         lib.print_n("Skipping BGC search with anitSMASH. Use '--antismash' as a script argument if you would like to do this.")
 
@@ -215,4 +215,4 @@ def main(input_args,filenames):
         lib.make_path(results_path)
     filenames.csv_output = os.path.join(results_path,f"{input_args.array}_results.csv")
     final_df.to_csv(filenames.csv_output, index=False)
-    lib.file_exists(filenames.csv_output,"Final results report successfully generated","Final results report was not generated")
+    lib.file_exists_exit(filenames.csv_output,"Final results report successfully generated","Final results report was not generated")

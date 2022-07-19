@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --array=78
 #SBATCH --cpus-per-task=24
-#SBATCH --mem=200G
+#SBATCH --mem=150G
 #SBATCH --partition=parallel
 #SBATCH --time=2-00:00:00
 #SBATCH --job-name=fungiflow

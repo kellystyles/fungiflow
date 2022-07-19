@@ -51,7 +51,7 @@ def trimmomatic(input_args,filenames,trimmed_path):
         print(e.returncode)
         print(e.output)
 
-def fastqc(input_args,fastqc_path):
+def fastqc(input_args,trimmed_path):
     """
     Performs QC analysis of Illumina reads with `fastqc`.  
     
@@ -59,11 +59,11 @@ def fastqc(input_args,fastqc_path):
     Outputs:    fastqc output folder
     """
 
-    stdout = os.path.join(fastqc_path,f"{input_args.array}.out")
-    stderr = os.path.join(fastqc_path,f"{input_args.array}.err")
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_fastqc.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_fastqc.err")
 
     lib.print_n("Assessing reads with FastQC")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.qc_image,"fastqc","-o",fastqc_path,f"{input_args.array}_*.fq*"]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.qc_image,"fastqc","-o",trimmed_path,os.path.join(trimmed_path,f"{input_args.array}_*.fq*")]
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
@@ -161,7 +161,7 @@ def assembly_hybrid(input_args,filenames,assembly_path):
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
-        print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with SPADES")
+        print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with FLYE")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -251,7 +251,7 @@ def main(input_args,filenames):
     filenames.adapter_file = os.path.join("adapters",f"{str(input_args.array)}_adapters.fasta")
     if lib.file_exists(filenames.adapter_file,"Adapters already identified! Skipping...","Searching for adapter sequences in short reads") is False:
         find_adapters(input_args,filenames,adapter_path)
-        lib.file_exists(filenames.adapter_file,"Adapters identified!","Adapters not successfully extracted... check the logs and your inputs")
+        lib.file_exists_exit(filenames.adapter_file,"Adapters identified!","Adapters not successfully extracted... check the logs and your inputs")
 
     trimmed_path = "trimmed"
     lib.make_path(trimmed_path)
@@ -265,8 +265,8 @@ def main(input_args,filenames):
     if lib.file_exists_bool(filenames.trimmedf,filenames.shortf,0.6,"Forward reads already trimmed! Skipping...","") is False and \
         lib.file_exists_bool(filenames.trimmedr,filenames.shortr,0.6,"Reverse reads already trimmed! Skipping...","") is False:
         trimmomatic(input_args,filenames,trimmed_path)
-        lib.file_exists(filenames.trimmedf,"Forward reads trimmed successfully!","Forward reads not trimmed... check the logs and your inputs")
-        lib.file_exists(filenames.trimmedr,"Reverse reads trimmed successfully!","Reverse reads not trimmed... check the logs and your inputs")
+        lib.file_exists_exit(filenames.trimmedf,"Forward reads trimmed successfully!","Forward reads not trimmed... check the logs and your inputs")
+        lib.file_exists_exit(filenames.trimmedr,"Reverse reads trimmed successfully!","Reverse reads not trimmed... check the logs and your inputs")
 
     if input_args.nanopore is not None:
         filenames.nanopore = input_args.nanopore
@@ -275,7 +275,12 @@ def main(input_args,filenames):
         filenames.nanopore_length_filtered = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_lf.fa")
         filenames.short_mapped_2_long = os.path.join(trimmed_path,input_args.array+"_mapped.npy")
         filenames.nanopore_corr = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_corr.fa")
-        long_read_trim(input_args,filenames,trimmed_path)
+        if lib.file_exists(filenames.nanopore_corr,"Long reads already trimmed and corrected! Skipping...","") is False:
+            long_read_trim(input_args,filenames,trimmed_path)
+
+            if lib.file_exists_exit(filenames.nanopore_corr,"Long reads trimmed and corrected!","Long reads could not be trimmed and corrected. Please check the logs")
+
+    fastqc(input_args,trimmed_path)
 
     if len(input_args.kraken2_db) > 0:
 
@@ -295,8 +300,8 @@ def main(input_args,filenames):
         if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Trimmed reads already filtered by Kraken2! Skipping...","") is False \
         and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Trimmed reads already filtered by Kraken2! Skipping...","") is False:
             kraken2(input_args,filenames,kraken2_path)
-            if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False \
-            and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs.") is False:
+            if lib.file_exists_bool(filenames.k_unclassifiedf,filenames.trimmedf,0.6,"Forward trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") is False \
+            and lib.file_exists_bool(filenames.k_unclassifiedr,filenames.trimmedr,0.6,"Reverse trimmed reads successfully filtered by Kraken2! Skipping...","Taxonomic filtering with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") is False:
                 filenames.trimmedf = filenames.k_unclassifiedf
                 filenames.trimmedr = filenames.k_unclassifiedr
 
@@ -312,16 +317,19 @@ def main(input_args,filenames):
 
     # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
-        if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye") is False:
+        if lib.file_exists_bool(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
+            print("hello there")
+            print("test0")
             filenames.nanopore_sam = os.path.join(assembly_path,filenames.nanopore.split(".")[0]+".sam")
             filenames.racon_assembly = os.path.join(racon_path,"*.fa*") # find out actual output filename
             filenames.medaka_assembly = os.path.join(medaka_path,"*.fa*") # find out actual output filename
             filenames.assembly_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+".bam")
             filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam") 
+            print("test1")
             assembly_hybrid(input_args,filenames,assembly_path)
             hybrid_polish(input_args,filenames,assembly_path)
     else:
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing short read assembly with SPADes") is False:
             assembly_short(input_args,filenames,assembly_path)
 
-    lib.file_exists(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
+    lib.file_exists_exit(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
