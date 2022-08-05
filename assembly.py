@@ -71,7 +71,7 @@ def fastqc(input_args,trimmed_path):
         print(e.returncode)
         print(e.output)   
 
-def porechop(input_args,filenames,trimmed_path,trimmed_path):
+def porechop(input_args,filenames,trimmed_path):
     stdout = os.path.join(trimmed_path,f"{input_args.array}_porechop.out")
     stderr = os.path.join(trimmed_path,f"{input_args.array}_porechop.err")
     # Trimming long reads with PORECHOP
@@ -227,6 +227,7 @@ def hybrid_polish(input_args,filenames,assembly_path):
     lib.make_path(racon_path)
     os.chdir(racon_path)
     cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"racon","--no-trimming","-t",input_args.cpus,filenames.nanopore_length_filtered,filenames.nanopore_sam,filenames.assembly_fasta]
+    os.chdir(input_args.directory)
     medaka_path = os.path.join(assembly_path,"medaka")
     lib.make_path(medaka_path)
     os.chdir(medaka_path)

@@ -74,8 +74,8 @@ def quast(input_args,filenames,output_path):
     Output:     QUAST output folder
     """
 
-    stdout = os.path.join(quast_output,f"{array}.out")
-    stderr = os.path.join(quast_output,f"{array}.err")
+    stdout = os.path.join(output_path,f"{array}.out")
+    stderr = os.path.join(output_path,f"{array}.err")
 
     if os.path.exists(filenames.funannotate_annotations) == True and os.stat(filenames.funannotate_annotations).st_size > 0:
         print("Funannotate annotations GFF file exists, pass to Quast")
@@ -122,8 +122,8 @@ def antismash(input_args,filenames,antismash_out):
     Output:     antismash output folder
     """
     
-    stdout = os.path.join("antismash",f"{input_args.array}.out")
-    stderr = os.path.join("antismash",f"{input_args.array}.err")
+    stdout = os.path.join(antismash_out,f"{input_args.array}.out")
+    stderr = os.path.join(antismash_out,f"{input_args.array}.err")
 
     if os.path.exists(antismash_out):
         shutil.rmtree(antismash_out)
