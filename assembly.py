@@ -76,6 +76,7 @@ def porechop(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_porechop.err")
     # Trimming long reads with PORECHOP
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
+    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -87,6 +88,7 @@ def fastq_2_fasta(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_fastq_2_fasta.err")
     # Converting long reads to FASTA format
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh","-f",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}","ignorebadquality"] 
+    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -97,7 +99,8 @@ def length_filter_fasta(input_args,filenames,trimmed_path):
     stdout = os.path.join(trimmed_path,f"{input_args.array}_length_filter_fasta.out")
     stderr = os.path.join(trimmed_path,f"{input_args.array}_length_filter_fasta.err")
     # Length-filtering trimmed long reads
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh","-f",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}",f"minlen={input_args.minlen}"]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh","-f",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}",f"minlen={input_args.minimum_length}"]
+    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -109,6 +112,7 @@ def short_map_2_long(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_short_map_2_long.err")
     # mapping short reads
     cmd1 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
+    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -120,6 +124,7 @@ def long_read_corr(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_long_read_corr.err")
     # Correcting long reads with FMLRC
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc","-p",input_args.cpus,filenames.short_mapped_2_long,filenames.nanopore_fasta,filenames.nanopore_corr]
+    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:

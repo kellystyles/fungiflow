@@ -9,8 +9,8 @@ def itsx(input_args,filenames,output_path):
     Input:      assembly FASTA file
     Output:     itsx directory with ITS FASTA files
     """
-    stdout = os.path.join(itsx_path,f"{array}.out")
-    stderr = os.path.join(itsx_path,f"{array}.err")
+    stdout = os.path.join(output_path,f"{input_args.array}.out")
+    stderr = os.path.join(output_path,f"{input_args.array}.err")
 
     print_h("Extracting ITS with ITSx")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ITSx","-i",filenames.assembly_fasta,"-o",os.path.join(output_path,input_args.array),"-t","f","--cpu",input_args.cpus,"--preserve","--not_found","F","--temp",input_args.itsx_path]
@@ -29,8 +29,8 @@ def blastn(input_args,filenames,blast_path):
     Output:     blastn TXT output file    
     """
 
-    stdout = os.path.join(blast_path,f"{array}.out")
-    stderr = os.path.join(blast_path,f"{array}.err")
+    stdout = os.path.join(blast_path,f"{input_args.array}.out")
+    stderr = os.path.join(blast_path,f"{input_args.array}.err")
 
     print_h("BLASTn of ITS sequence against ITS DB")
     cmd1 = f"singularity exec -B /nfs:/nfs {input_args.singularity} blastn -db {input_args.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.results_file}"
@@ -74,8 +74,8 @@ def quast(input_args,filenames,output_path):
     Output:     QUAST output folder
     """
 
-    stdout = os.path.join(output_path,f"{array}.out")
-    stderr = os.path.join(output_path,f"{array}.err")
+    stdout = os.path.join(output_path,f"{input_args.array}.out")
+    stderr = os.path.join(output_path,f"{input_args.array}.err")
 
     if os.path.exists(filenames.funannotate_annotations) == True and os.stat(filenames.funannotate_annotations).st_size > 0:
         print("Funannotate annotations GFF file exists, pass to Quast")

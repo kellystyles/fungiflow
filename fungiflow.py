@@ -83,12 +83,6 @@ def main():
         lib.print_h("Skipping assembly annotation...")
         names.funannotate_gbk = names.assembly_fasta
 
-    # Funannotate module changes into its own directory to prevent overlap of temp files with other array jobs
-    # Checks the directory has changed back
-    if os.getcwd() is not args.directory:
-        lib.print_n("Changing back to main directory")
-        os.chdir(args.directory)
-
     # Running 'POST_ANALYSIS' module
     post_analysis.main(args,names)
 
