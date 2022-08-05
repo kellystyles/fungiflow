@@ -50,6 +50,8 @@ def get_args():
         parser.add_argument('-t', '--type', action='store', default="isolate", 
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
+        parser.add_argument('-minlen', '--minimum_length', action='store', default="2000", 
+                            help='Minimum length of long-reads to retain during QC processes. Default is 2000 bp.', type=str)                            
         parser.add_argument('-b', '--blobplot', action='store_true', 
                             help='Prepare blobplots of assembly')            
     except argparse.ArgumentError:
