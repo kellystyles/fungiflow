@@ -143,11 +143,10 @@ def main(input_args,filenames):
     quast_text = "   _______\n___/ Quast \____________________________________________________________________"
     lib.print_t(quast_text)
 
-    quast_out = os.path.join("quast",args.array)
+    quast_out = os.path.join("quast",input_args.array)
     filenames.quast_report = os.path.join(quast_out,"transposed_report.tsv")
     lib.make_path(quast_out)
-    filenames.funannotate_gff = os.path.join(funannotate_path,"predict_results",f"{args.array}.gff3")
-    if lib.file_exists(filenames.quast_report,"Quast successfully analysed the assembly!",) is False:
+    if lib.file_exists(filenames.quast_report,"Quast already analysed the assembly!","Analysing the assembly with Quast") is False:
         quast(input_args,filenames,quast_out)
         quast_df = parse_quast(filenames.quast_report,input_args.array)
         lib.file_exists_exit(filenames.quast_report,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
@@ -164,7 +163,7 @@ def main(input_args,filenames):
         its_full = os.path.join(itsx_output_path,f"{input_args.array}.full.fasta")
         its_2 = os.path.join(itsx_output_path,f"{input_args.array}.ITS2.fasta")
         its_1 = os.path.join(itsx_output_path,f"{input_args.array}.ITS1.fasta")
-        if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping",) is False:
+        if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping","Extracting the ITS sequence with ITSx") is False:
             itsx(input_args,filenames,itsx_output_path)
             lib.make_path(blastn_output_path)
             if lib.file_exists(its_full,"ITSx successfully extracted the full ITS sequence!","ITSx failed to extract the full ITS sequence. Checking for ITS2") == True:
@@ -194,7 +193,7 @@ def main(input_args,filenames):
         filenames.antismash_index = os.path.join(antismash_out,"index.html")
         if os.path.exists(antismash_out) is False:
             lib.make_path(antismash_out)
-        if lib.file_exists(filenames.antismash_index,"antiSMASH already analysed the assembly!",) is False:
+        if lib.file_exists(filenames.antismash_index,"antiSMASH already analysed the assembly!","Analysing the assembly for BGCs with antiSMASH") is False:
             antismash(input_args,filenames,antismash_out)
             lib.file_exists_exit(filenames.antismash_index,"antiSMASH successfully analysed the assembly!","antiSMASH failed... check the logs and your inputs")
     else:

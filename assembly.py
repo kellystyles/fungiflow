@@ -63,13 +63,68 @@ def fastqc(input_args,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_fastqc.err")
 
     lib.print_n("Assessing reads with FastQC")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.qc_image,"fastqc","-o",trimmed_path,os.path.join(trimmed_path,f"{input_args.array}_*.fq*")]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fastqc","-o",trimmed_path,os.path.join(trimmed_path,f"{input_args.array}_*.fq*")]
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
+
+def porechop(input_args,filenames,trimmed_path,trimmed_path):
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_porechop.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_porechop.err")
+    # Trimming long reads with PORECHOP
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output) 
+
+def fastq_2_fasta(input_args,filenames,trimmed_path):
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_fastq_2_fasta.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_fastq_2_fasta.err")
+    # Converting long reads to FASTA format
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh","-f",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}","ignorebadquality"] 
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output) 
+
+def length_filter_fasta(input_args,filenames,trimmed_path):
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_length_filter_fasta.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_length_filter_fasta.err")
+    # Length-filtering trimmed long reads
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh","-f",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}",f"minlen={input_args.minlen}"]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output) 
+
+def short_map_2_long(input_args,filenames,trimmed_path):
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_short_map_2_long.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_short_map_2_long.err")
+    # mapping short reads
+    cmd1 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output) 
+
+def long_read_corr(input_args,filenames,trimmed_path):
+    stdout = os.path.join(trimmed_path,f"{input_args.array}_long_read_corr.out")
+    stderr = os.path.join(trimmed_path,f"{input_args.array}_long_read_corr.err")
+    # Correcting long reads with FMLRC
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc","-p",input_args.cpus,filenames.short_mapped_2_long,filenames.nanopore_fasta,filenames.nanopore_corr]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output) 
 
 def long_read_trim(input_args,filenames,trimmed_path):
     """
@@ -87,31 +142,16 @@ def long_read_trim(input_args,filenames,trimmed_path):
     stderr = os.path.join(trimmed_path,f"{input_args.array}_long_read_trim.err")
 
     lib.print_h(f"Preparing long reads {input_args.nanopore} for assembly")
-    # Trimming long reads with PORECHOP
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"porechop","-i",filenames.nanopore,"-o",filenames.nanopore_trimmed,"--adapter_threshold","96","--no_split"]
-    # Converting long reads to FASTA format
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"reformat.sh","-f",f"in={filenames.nanopore_trimmed}",f"out={filenames.nanopore_fasta}","ignorebadquality"] 
-    # Length-filtering trimmed long reads
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bbduk.sh","-f",f"in={filenames.nanopore_fasta}",f"out={filenames.nanopore_length_filtered}","minlen=3000"]
-    # mapping short reads
-    cmd4 = ["gunzip","-c",filenames.trimmedf,filenames.trimmedr,"|","awk","\'NR % 4 == 2\'","|","sort","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"ropebwt2","-LR","|","tr","NT","TN","|","singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc-convert",filenames.short_mapped_2_long]
-    # Correcting long reads with FMLRC
-    cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fmlrc","-p",input_args.cpus,filenames.short_mapped_2_long,filenames.nanopore_fasta,filenames.nanopore_corr]
-    
-    print(" ".join(cmd1))
-    print(" ".join(cmd2))
-    print(" ".join(cmd3))
-    print(" ".join(cmd4))
-    print(" ".join(cmd5))
-    try:
-        lib.execute(cmd1,stdout,stderr)
-        lib.execute(cmd2,stdout,stderr)
-        lib.execute(cmd3,stdout,stderr)
-        lib.execute_shell(cmd4,stdout,stderr)
-        lib.execute(cmd5,stdout,stderr)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
+    porechop(input_args,filenames,trimmed_path)
+    lib.file_exists_exit(filenames.nanopore_trimmed,"Porechop successfully trimmed the reads","Porechop did not complete successfully. Check the logs.")
+    fastq_2_fasta(input_args,filenames,trimmed_path)
+    lib.file_exists_exit(filenames.nanopore_fasta,"reformat.sh successfully converted the reads to FASTA format","reformat.sh did not complete successfully. Check the logs.")
+    length_filter_fasta(input_args,filenames,trimmed_path)
+    lib.file_exists_exit(filenames.nanopore_length_filtered,"bbduk.sh successfully length-filtered the reads","bbduk.sh did not complete successfully. Check the logs.")
+    short_map_2_long(input_args,filenames,trimmed_path)
+    lib.file_exists_exit(filenames.short_mapped_2_long,"The short reads were successfully mapped to the long reads","The short read mapping to long reads was not successful. Check the logs.")
+    long_read_corr(input_args,filenames,trimmed_path)
+    lib.file_exists_exit(filenames.nanopore_corr,"FMLRC successfully corrected the reads","FMLRC did not complete successfully. Check the logs.")
 
 def assembly_short(input_args,filenames,assembly_path):
     """
@@ -135,7 +175,6 @@ def assembly_short(input_args,filenames,assembly_path):
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
-        print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with SPADES")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -150,14 +189,14 @@ def assembly_hybrid(input_args,filenames,assembly_path):
     stdout = os.path.join(assembly_path,f"{input_args.array}.out")
     stderr = os.path.join(assembly_path,f"{input_args.array}.err")
 
-    if input_args.data_type is "metagenomic":
+    if input_args.type is "metagenomic":
         assembly_type = "--meta"
     else:
         assembly_type = ""
 
     # Assembly with FLYE
     lib.print_h(f"Hybrid isolate assembly of {input_args.array} reads with FLYE")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_clean,"-o",assembly_path,"-t",input_args.cpus,"--trestle","-i","2",assembly_type]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"-o",assembly_path,"-t",input_args.cpus,"-i","2",assembly_type]
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
@@ -175,14 +214,14 @@ def hybrid_polish(input_args,filenames,assembly_path):
     4. map short trimmed/taxa-filtered short reads to medaka output assembly
     5. one round of polishing using `pilon`
     
-    Inputs:     hybrid flye assembly FASTA file, Nanopore FASTA and Illumina FASTQ reads.
+    Inputs:    hybrid flye assembly FASTA file, Nanopore FASTA and Illumina FASTQ reads.
     Output:    polished assembly FASTA file.
     """
     stdout = os.path.join(assembly_path,f"{input_args.array}.out")
     stderr = os.path.join(assembly_path,f"{input_args.array}.err")
     
     # Polishing FLYE assembly
-    lib.print_h(f"Polishing {input_args.assembly_fasta}")
+    lib.print_h(f"Polishing {filenames.assembly_fasta}")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"minimap2","-x","map-ont",filenames.assembly_fasta,filenames.nanopore_length_filtered,">",filenames.nanopore_sam]
     racon_path = os.path.join(assembly_path,"racon")
     lib.make_path(racon_path)
@@ -197,7 +236,7 @@ def hybrid_polish(input_args,filenames,assembly_path):
     cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","mem","-t",input_args.cpus,filenames.medaka_assembly,filenames.trimmedf,filenames.trimmedr,">",filenames.assembly_bam]
     cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","sort","-@",input_args.cpus,"-o",filenames.assembly_sorted_bam,filenames.assembly_bam]
     cmd6 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","index","-@",input_args.cpus,filenames.assembly_sorted_bam]
-    cmd7 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"java",f"-Xmx{input_args.mem}G","-jar","pilon","--genome",input_args.assembly_fasta,"--bam",filenames.assembly_sorted_bam,"--outdir",assembly_path]
+    cmd7 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"java",f"-Xmx{input_args.mem}G","-jar","pilon","--genome",filenames.assembly_fasta,"--bam",filenames.assembly_sorted_bam,"--outdir",assembly_path]
 
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -277,8 +316,7 @@ def main(input_args,filenames):
         filenames.nanopore_corr = os.path.join(trimmed_path,filenames.nanopore.split(".")[0]+"_corr.fa")
         if lib.file_exists(filenames.nanopore_corr,"Long reads already trimmed and corrected! Skipping...","") is False:
             long_read_trim(input_args,filenames,trimmed_path)
-
-            if lib.file_exists_exit(filenames.nanopore_corr,"Long reads trimmed and corrected!","Long reads could not be trimmed and corrected. Please check the logs")
+            lib.file_exists_exit(filenames.nanopore_corr,"Long reads trimmed and corrected!","Long reads could not be trimmed and corrected. Please check the logs")
 
     fastqc(input_args,trimmed_path)
 
@@ -317,12 +355,12 @@ def main(input_args,filenames):
 
     # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
-        if lib.file_exists_bool(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
+        if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
             print("hello there")
             print("test0")
             filenames.nanopore_sam = os.path.join(assembly_path,filenames.nanopore.split(".")[0]+".sam")
-            filenames.racon_assembly = os.path.join(racon_path,"*.fa*") # find out actual output filename
-            filenames.medaka_assembly = os.path.join(medaka_path,"*.fa*") # find out actual output filename
+            filenames.racon_assembly = os.path.join("racon","*.fa*") # find out actual output filename
+            filenames.medaka_assembly = os.path.join("medaka","*.fa*") # find out actual output filename
             filenames.assembly_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+".bam")
             filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam") 
             print("test1")

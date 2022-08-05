@@ -88,7 +88,7 @@ def main():
         os.chdir(args.directory)
 
     # Running 'POST_ANALYSIS' module
-    post_analysis(args,names)
+    post_analysis.main(args,names)
 
     # Running 'BLOBPLOT' module
     if args.blobplot is not None:
