@@ -19,8 +19,8 @@ def find_adapters(input_args,filenames,adapter_path):
     stderr = os.path.join(adapter_path,f"adapter_{input_args.array}.err")
 
     lib.print_h(f"Identifying adapter sequences in {input_args.array} reads")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.shortf,filenames.adapter_file]
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bash","adap_ID.sh",filenames.shortr,filenames.adapter_file]
+    cmd1 = ["bash","adap_ID.sh",filenames.shortf,filenames.adapter_file]
+    cmd2 = ["bash","adap_ID.sh",filenames.shortr,filenames.adapter_file]
     try:
         print(" ".join(cmd1))
         lib.execute(cmd1,stdout,stderr)
