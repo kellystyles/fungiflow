@@ -73,6 +73,7 @@ def execute(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
+    print(" ".join(command))
     with open(stdout, "wt") as out, open(stderr, "wt") as err:
         subprocess.run(command,stdout=out,stderr=err)
 
@@ -87,6 +88,7 @@ def execute_shell(command,stdout,stderr):
     stdout : file to record standard out.
     stderr : file to record standard error.
     """
+    print(" ".join(command))
     with open(stdout, "wt") as out, open(stderr, "wt") as err:
         subprocess.run(command,shell=True,stdout=out,stderr=err)
         

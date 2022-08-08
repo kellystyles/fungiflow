@@ -21,12 +21,10 @@ def find_adapters(input_args,filenames,adapter_path):
     lib.print_h(f"Identifying adapter sequences in {input_args.array} reads")
     cmd1 = ["bash","adap_ID.sh",filenames.shortf,filenames.adapter_file]
     cmd2 = ["bash","adap_ID.sh",filenames.shortr,filenames.adapter_file]
-    try:
-        print(" ".join(cmd1))
+    try:   
         lib.execute(cmd1,stdout,stderr)
         print(" ".join(cmd2))
         lib.execute(cmd2,stdout,stderr)
-
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -44,7 +42,6 @@ def trimmomatic(input_args,filenames,trimmed_path):
 
     lib.print_h(f"Trimming Illumina {input_args.array} reads with Trimmomatic")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"TrimmomaticPE","-threads",input_args.cpus,"-trimlog",filenames.trimlog_file,filenames.shortf,filenames.shortr,filenames.trimmedf,filenames.utrimmedf,filenames.trimmedr,filenames.utrimmedr,f"ILLUMINACLIP:{filenames.adapter_file}:2:30:10:4:4:/true","TRAILING:9","SLIDINGWINDOW:4:15","MINLEN:36"]
-    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -61,17 +58,15 @@ def fastqc(input_args,trimmed_path):
 
     stdout = os.path.join(trimmed_path,f"{input_args.array}_fastqc.out")
     stderr = os.path.join(trimmed_path,f"{input_args.array}_fastqc.err")
-
     lib.print_n("Assessing reads with FastQC")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"fastqc","-o",trimmed_path,os.path.join(trimmed_path,f"{input_args.array}_*.fq*")]
-    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
 
-def porechop(input_args,filenames,trimmed_path,trimmed_path):
+def porechop(input_args,filenames,trimmed_path):
     stdout = os.path.join(trimmed_path,f"{input_args.array}_porechop.out")
     stderr = os.path.join(trimmed_path,f"{input_args.array}_porechop.err")
     # Trimming long reads with PORECHOP
@@ -168,11 +163,9 @@ def assembly_short(input_args,filenames,assembly_path):
         assembly_type = "--meta"
     else:
         assembly_type = "--isolate"
-
     # Assembly with SPADES
     lib.print_h(f"Assembling trimmed {input_args.array} reads with SPADES")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"spades.py",assembly_type,"--threads",input_args.cpus,"--memory",input_args.mem,"-k","21,33,55,77,99,127","--pe1-1",filenames.trimmedf,"--pe1-2",filenames.trimmedr,"-o",assembly_path]
-    print(" ".join(cmd1))
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"spades.py",assembly_type,"--threads",input_args.cpus,"--memory",input_args.mem,"-k","21,33,55,77,99,127","--pe1-1",filenames.trimmedf,"--pe1-2",filenames.trimmedr,"-o",assembly_path] 
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -193,11 +186,9 @@ def assembly_hybrid(input_args,filenames,assembly_path):
         assembly_type = "--meta"
     else:
         assembly_type = ""
-
     # Assembly with FLYE
     lib.print_h(f"Hybrid isolate assembly of {input_args.array} reads with FLYE")
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"-o",assembly_path,"-t",input_args.cpus,"-i","2",assembly_type]
-    print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
         print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with FLYE")
@@ -205,7 +196,87 @@ def assembly_hybrid(input_args,filenames,assembly_path):
         print(e.returncode)
         print(e.output)   
 
-def hybrid_polish(input_args,filenames,assembly_path):
+def minimap2(input_args,filenames,assembly_path):
+    stdout = os.path.join(assembly_path,f"{input_args.array}_minimap2.out")
+    stderr = os.path.join(assembly_path,f"{input_args.array}_minimap2.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"minimap2","-x","map-ont",filenames.assembly_fasta,filenames.nanopore_length_filtered,">",filenames.nanopore_sam]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)   
+
+def racon(input_args,filenames,racon_path):
+    stdout = os.path.join(racon_path,f"{input_args.array}_racon.out")
+    stderr = os.path.join(racon_path,f"{input_args.array}_racon.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"racon","--no-trimming","-t",input_args.cpus,filenames.nanopore_length_filtered,filenames.nanopore_sam,filenames.assembly_fasta]
+    try:    
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)   
+
+def medaka(input_args,filenames,medaka_path):
+    stdout = os.path.join(medaka_path,f"{input_args.array}_medaka.out")
+    stderr = os.path.join(medaka_path,f"{input_args.array}_medaka.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"medaka_consenus","-i",filenames.nanopore_length_filtered,"-d",filenames.racon_assembly,"-o","medaka","-t",input_args.cpus,"-m","r941_min_hac_g511"]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def bwamem2_index(input_args,filenames,medaka_path):
+    stdout = os.path.join(medaka_path,f"{input_args.array}_bwamem2_index.out")
+    stderr = os.path.join(medaka_path,f"{input_args.array}_bwamem2_index.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","index",filenames.medaka_assembly]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def bwamem2_map(input_args,filenames,assembly_path):
+    stdout = os.path.join(assembly_path,f"{input_args.array}_bwamem2_map.out")
+    stderr = os.path.join(assembly_path,f"{input_args.array}_bwamem2_map.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","mem","-t",input_args.cpus,filenames.medaka_assembly,filenames.trimmedf,filenames.trimmedr,">",filenames.assembly_bam]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def samtools_sort(input_args,filenames,assembly_path):
+    stdout = os.path.join(assembly_path,f"{input_args.array}_samtools_sort.out")
+    stderr = os.path.join(assembly_path,f"{input_args.array}_samtools_sort.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","sort","-@",input_args.cpus,"-o",filenames.assembly_sorted_bam,filenames.assembly_bam]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def samtools_index(input_args,filenames,assembly_path):
+    stdout = os.path.join(assembly_path,f"{input_args.array}_samtools_index.out")
+    stderr = os.path.join(assembly_path,f"{input_args.array}_samtools_index.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","index","-@",input_args.cpus,filenames.assembly_sorted_bam]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def pilon(input_args,filenames,assembly_path):
+    stdout = os.path.join(assembly_path,f"{input_args.array}_pilon.out")
+    stderr = os.path.join(assembly_path,f"{input_args.array}_pilon.err")
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"java",f"-Xmx{input_args.mem}G","-jar","pilon","--genome",filenames.assembly_fasta,"--bam",filenames.assembly_sorted_bam,"--outdir",assembly_path]
+    try:
+        lib.execute(cmd1,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def hybrid_polish(input_args,filenames,assembly_path,racon_path,medaka_path):
     """
     Polishes hybrid assemblies as follows:
     1. map trimmed/length-filtered long reads to assembly with `minimap2`
@@ -221,42 +292,14 @@ def hybrid_polish(input_args,filenames,assembly_path):
     stderr = os.path.join(assembly_path,f"{input_args.array}.err")
     
     # Polishing FLYE assembly
-    lib.print_h(f"Polishing {filenames.assembly_fasta}")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"minimap2","-x","map-ont",filenames.assembly_fasta,filenames.nanopore_length_filtered,">",filenames.nanopore_sam]
-    racon_path = os.path.join(assembly_path,"racon")
-    lib.make_path(racon_path)
-    os.chdir(racon_path)
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"racon","--no-trimming","-t",input_args.cpus,filenames.nanopore_length_filtered,filenames.nanopore_sam,filenames.assembly_fasta]
-    os.chdir(input_args.directory)
-    medaka_path = os.path.join(assembly_path,"medaka")
-    lib.make_path(medaka_path)
-    os.chdir(medaka_path)
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"medaka_consenus","-i",filenames.nanopore_length_filtered,"-d",filenames.racon_assembly,"-o","medaka","-t",input_args.cpus,"-m","r941_min_hac_g511"]
-    os.chdir(input_args.directory)
-    cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","index",filenames.assembly_fasta]
-    cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"bwa-mem2","mem","-t",input_args.cpus,filenames.medaka_assembly,filenames.trimmedf,filenames.trimmedr,">",filenames.assembly_bam]
-    cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","sort","-@",input_args.cpus,"-o",filenames.assembly_sorted_bam,filenames.assembly_bam]
-    cmd6 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"samtools","index","-@",input_args.cpus,filenames.assembly_sorted_bam]
-    cmd7 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"java",f"-Xmx{input_args.mem}G","-jar","pilon","--genome",filenames.assembly_fasta,"--bam",filenames.assembly_sorted_bam,"--outdir",assembly_path]
-
-    print(" ".join(cmd1))
-    print(" ".join(cmd2))
-    print(" ".join(cmd3))
-    print(" ".join(cmd4))
-    print(" ".join(cmd5))
-    print(" ".join(cmd6))
-    print(" ".join(cmd7))
-    try:
-        lib.execute(cmd1,stdout,stderr)
-        lib.execute(cmd2,stdout,stderr)
-        lib.execute(cmd3,stdout,stderr)
-        lib.execute(cmd4,stdout,stderr)
-        lib.execute(cmd5,stdout,stderr)
-        lib.execute(cmd6,stdout,stderr)
-        lib.execute(cmd7,stdout,stderr)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
+    minimap2(input_args,filenames,assembly_path)
+    racon(input_args,filenames,racon_path)
+    medaka(input_args,filenames,medaka_path)
+    bwamem2_index(input_args,filenames,medaka_path)
+    bwamem2_map(input_args,filenames,assembly_path)
+    samtools_sort(input_args,filenames,assembly_path)
+    samtools_index(input_args,filenames,assembly_path)
+    pilon(input_args,filenames,assembly_path)
 
 def kraken2(input_args,filenames,kraken_path):
     """
@@ -273,7 +316,6 @@ def kraken2(input_args,filenames,kraken_path):
     cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2","--db",input_args.kraken2_db,\
         "--threads",input_args.cpus,"--use-names","--report",filenames.kreport,"--classified-out",filenames.k_classified,\
             "--unclassified-out",filenames.k_unclassified,"--paired",filenames.trimmedf,filenames.trimmedr]
-    print(" ".join(cmd1))    
     try:
         lib.execute(cmd1,stdout,stderr)
     except subprocess.CalledProcessError as e:
@@ -352,10 +394,10 @@ def main(input_args,filenames):
 
     assembly_path = os.path.join("assembly",input_args.array)
     lib.make_path(assembly_path)
-    filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
 
     # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
+        filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
             print("hello there")
             print("test0")
@@ -368,6 +410,7 @@ def main(input_args,filenames):
             assembly_hybrid(input_args,filenames,assembly_path)
             hybrid_polish(input_args,filenames,assembly_path)
     else:
+        filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing short read assembly with SPADes") is False:
             assembly_short(input_args,filenames,assembly_path)
 

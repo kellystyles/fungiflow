@@ -53,6 +53,15 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     wget https://versaweb.dl.sourceforge.net/project/bbmap/BBMap_38.96.tar.gz 
     tar xvzf BBMap_38.96.tar.gz && rm BBMap_38.96.tar.gz
     mv bbmap/* /usr/bin/
+    rm -r bbmap
+    # - RopeBWT2
+    wget https://github.com/lh3/ropebwt2/archive/refs/tags/sgdp.tar.gz
+    tar -xvzf sgdp.tar.gz
+    cd ropebwt2-sgdp
+    make
+    mv ropebwt2 /usr/bin/
+    cd /
+    rm -r ropebwt2-sgdp
     # - NCBI+ suite
     VERSION=2.11.0
     wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/$VERSION/ncbi-blast-$VERSION+-x64-linux.tar.gz
@@ -60,6 +69,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     md5sum -c ncbi-blast-2.11.0+-x64-linux.tar.gz.md5
     tar zxvpf ncbi-blast-$VERSION+-x64-linux.tar.gz && rm ncbi-blast-$VERSION+-x64-linux.tar.gz
     mv ncbi-blast-2.11.0+/bin/* /usr/bin/
+    rm -r ncbi-blast-2.11.0+
     # - Quast
     wget https://downloads.sourceforge.net/project/quast/quast-5.0.2.tar.gz
     tar -xzf quast-5.0.2.tar.gz
@@ -68,7 +78,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     QUAST_JSON="/usr/local/envs/environ/lib/python3.8/site-packages/quast-5.0.2-py3.8.egg/quast_libs/site_packages/jsontemplate/jsontemplate.py"
     sed -i 's/import cgi/import html/g' "$QUAST_JSON"
     sed -i 's/cgi.escape/html.escape/g' "$QUAST_JSON"
-    # - BlobToolKit
+    # - BlobToolKit database
     dir=$()
     cd /usr/local/envs/environ/lib/python3.*/site-packages/blobtools/
     wget ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz* -P data/
