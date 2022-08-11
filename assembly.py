@@ -184,12 +184,12 @@ def assembly_hybrid(input_args,filenames,assembly_path):
     stderr = os.path.join(assembly_path,f"{input_args.array}.err")
 
     if input_args.type is "metagenomic":
-        assembly_type = "--meta"
+        cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"--out-dir",assembly_path,"--threads",str(input_args.cpus),"--iterations","2","--meta"]
     else:
-        assembly_type = ""
+        cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"--out-dir",assembly_path,"--threads",str(input_args.cpus),"--iterations","2"]
     # Assembly with FLYE
     lib.print_h(f"Hybrid isolate assembly of {input_args.array} reads with FLYE")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"--out-dir",assembly_path,"--threads",input_args.cpus,"--iterations","2",assembly_type]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"--out-dir",assembly_path,"--threads",str(input_args.cpus),"--iterations","2",assembly_type]
     try:
         lib.execute(cmd1,stdout,stderr)
         print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with FLYE")
@@ -402,14 +402,11 @@ def main(input_args,filenames):
         racon_path = os.path.join(assembly_path,"racon")
         medaka_path = os.path.join(assembly_path,"medaka")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
-            print("hello there")
-            print("test0")
             filenames.nanopore_sam = os.path.join(assembly_path,filenames.nanopore.split(".")[0]+".sam")
             filenames.racon_assembly = os.path.join("racon","*.fa*") # find out actual output filename
             filenames.medaka_assembly = os.path.join("medaka","*.fa*") # find out actual output filename
             filenames.assembly_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+".bam")
             filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam") 
-            print("test1")
             assembly_hybrid(input_args,filenames,assembly_path)
             lib.file_exists_exit(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
             hybrid_polish(input_args,filenames,assembly_path,racon_path,medaka_path)
