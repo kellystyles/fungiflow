@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import datetime
 import library as lib
@@ -188,7 +189,7 @@ def assembly_hybrid(input_args,filenames,assembly_path):
         assembly_type = ""
     # Assembly with FLYE
     lib.print_h(f"Hybrid isolate assembly of {input_args.array} reads with FLYE")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"-o",assembly_path,"-t",input_args.cpus,"-i","2",assembly_type]
+    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"flye","--nano-raw",filenames.nanopore_corr,"--out-dir",assembly_path,"--threads",input_args.cpus,"--iterations","2",assembly_type]
     try:
         lib.execute(cmd1,stdout,stderr)
         print(f"{datetime.datetime.now():%Y-%m-%d %I:%M:%S} Completed assembly of trimmed {input_args.array} reads with FLYE")
@@ -398,6 +399,8 @@ def main(input_args,filenames):
     # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
     if input_args.nanopore is not None:
         filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
+        racon_path = os.path.join(assembly_path,"racon")
+        medaka_path = os.path.join(assembly_path,"medaka")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye please...") is False:
             print("hello there")
             print("test0")
@@ -408,10 +411,10 @@ def main(input_args,filenames):
             filenames.assembly_sorted_bam = os.path.join(assembly_path,filenames.assembly_fasta.split(".")[0]+"_sorted.bam") 
             print("test1")
             assembly_hybrid(input_args,filenames,assembly_path)
-            hybrid_polish(input_args,filenames,assembly_path)
+            lib.file_exists_exit(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
+            hybrid_polish(input_args,filenames,assembly_path,racon_path,medaka_path)
+            lib.file_exists_exit(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")
     else:
         filenames.assembly_fasta = os.path.join(assembly_path,"scaffolds.fasta")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing short read assembly with SPADes") is False:
             assembly_short(input_args,filenames,assembly_path)
-
-    lib.file_exists_exit(filenames.assembly_fasta,"Reads successfully assembled!","Assembly failed... check the logs and your inputs")

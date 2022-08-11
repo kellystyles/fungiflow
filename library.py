@@ -28,7 +28,8 @@ def make_path(path):
 def file_exists(file,success_message,error_message):
     """
     Check if file exists and is not empty.
-    Returns error message if the above is not True and will exit script.
+    Returns success message if the above is True.
+    Returns error message if the above is False.
     """
     if os.path.isfile(file) is True and os.stat(file).st_size > 0:
         print(success_message)
@@ -40,14 +41,15 @@ def file_exists(file,success_message,error_message):
 def file_exists_exit(file,success_message,error_message):
     """
     Check if file exists and is not empty.
-    Returns error message if the above is not True and will exit script.
+    Returns success message if the above is True.
+    Returns error message if the above is False and will exit script.
     """
     if os.path.isfile(file) is True and os.stat(file).st_size > 0:
         print(success_message)
         return True
     else:
         print(error_message)
-        return False and sys.exit()
+        sys.exit()
 
 def file_exists_bool(filea,fileb,modifier,success_message,error_message):
     """

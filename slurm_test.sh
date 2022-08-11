@@ -20,4 +20,5 @@ python3 ./fungiflow.py -d "/nfs/scratch/styleske/fungiflow/projects/microcera_te
 -sf /nfs/scratch/styleske/fungiflow/projects/singularity_files/funannotate_gm.sif \
 -sa /nfs/scratch/styleske/fungiflow/projects/singularity_files/antismash_6.0.1--pyhdfd78af_0.sif \
 -idb /nfs/scratch/styleske/fungiflow/databases/fungi_ITS/ITS_RefSeq_Fungi -kdb /nfs/scratch/styleske/fungiflow/databases/kraken2_std/ \
--bdb /nfs/scratch/styleske/fungiflow/databases/NCBI_nt/nt
+-bdb /nfs/scratch/styleske/fungiflow/databases/NCBI_nt/nt \
+-minlen 3000
