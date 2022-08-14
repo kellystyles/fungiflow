@@ -68,32 +68,35 @@ def main():
     start_time = datetime.datetime.now()
     print(args)
     
-    os.chdir(args.directory)
+    ### MAKE INPUT DIR COMPLETE PATH
+    args.directory_new = os.path.abspath(args.directory,args.array)
+    lib.make_path(args.directory_new)
+    os.chdir(args.directory_new)
 
     # Sets up class object for filenames
-    names = lib.Files(args.illumina_f,args.illumina_r)
+    filenames = lib.Files(args.illumina_f,args.illumina_r)
 
     # Running 'ASSEMBLY' module
-    assembly.main(args,names)
+    assembly.main(args,filenames)
 
     # Running 'FUNANNOTATE' module
     if args.singularity_funannotate is not None:
-        funannotate.main(args,names)
+        funannotate.main(args,filenames)
     else:
         lib.print_h("Skipping assembly annotation...")
-        names.funannotate_gbk = names.assembly_fasta
+        filenames.funannotate_gbk = filenames.assembly_fasta
 
     # Running 'POST_ANALYSIS' module
-    post_analysis.main(args,names)
+    post_analysis.main(args,filenames)
 
     # Running 'BLOBPLOT' module
     if args.blobplot is not None:
-        blobplot.main(args,names)
+        blobplot.main(args,filenames)
 
     lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
-    lib.print_h(f"Results saved to {names.csv_output}")
+    lib.print_h(f"Results saved to {filenames.csv_output}")
     lib.print_h("Output files are listed below:")
-    lib.print_n(names)
+    lib.print_n(filenames)
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂")
 
 if __name__ == '__main__':

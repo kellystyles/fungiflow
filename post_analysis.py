@@ -143,11 +143,11 @@ def main(input_args,filenames):
     quast_text = "   _______\n___/ Quast \____________________________________________________________________"
     lib.print_t(quast_text)
 
-    quast_out = os.path.join("quast",input_args.array)
-    filenames.quast_report = os.path.join(quast_out,"transposed_report.tsv")
-    lib.make_path(quast_out)
+    quast_path = os.path.abspath(input_args.directory_new,"quast")
+    filenames.quast_report = os.path.join(quast_path,"transposed_report.tsv")
+    lib.make_path(quast_path)
     if lib.file_exists(filenames.quast_report,"Quast already analysed the assembly!","Analysing the assembly with Quast") is False:
-        quast(input_args,filenames,quast_out)
+        quast(input_args,filenames,quast_path)
         quast_df = parse_quast(filenames.quast_report,input_args.array)
         lib.file_exists_exit(filenames.quast_report,"Quast successfully analysed the assembly!","Quast failed... check the logs and your inputs")
 
@@ -156,9 +156,9 @@ def main(input_args,filenames):
         tax_lookup_text = "   ___________________\n___/  Taxonomy Lookup  \________________________________________________________"        
         lib.print_t(tax_lookup_text)
 
-        itsx_output_path = os.path.join("ITSx",input_args.array)
+        itsx_output_path = os.path.abspath(input_args.directory_new,"ITSx")
         lib.make_path(itsx_output_path)
-        blastn_output_path = "blastn"
+        blastn_output_path = os.path.abspath(input_args.directory_new,"blastn")
         filenames.blast_out = os.path.join(blastn_output_path,f"{input_args.array}_its_blastn.out")
         its_full = os.path.join(itsx_output_path,f"{input_args.array}.full.fasta")
         its_2 = os.path.join(itsx_output_path,f"{input_args.array}.ITS2.fasta")
@@ -189,7 +189,7 @@ def main(input_args,filenames):
         bgc_text = "   ____________\n___/ BGC search \_______________________________________________________________"
         lib.print_t(bgc_text)
 
-        antismash_out = os.path.join("antismash",input_args.array)
+        antismash_out = os.path.abspath(input_args.directory_new,"antismash")
         filenames.antismash_index = os.path.join(antismash_out,"index.html")
         if os.path.exists(antismash_out) is False:
             lib.make_path(antismash_out)
@@ -209,9 +209,8 @@ def main(input_args,filenames):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         lib.print_n(final_df)
     
-    results_path = "results"
-    if os.path.exists(results_path) is False:
-        lib.make_path(results_path)
+    results_path = os.path.abspath(input_args.directory_new,"results")
+    lib.make_path(results_path)
     filenames.csv_output = os.path.join(results_path,f"{input_args.array}_results.csv")
     final_df.to_csv(filenames.csv_output, index=False)
     lib.file_exists_exit(filenames.csv_output,"Final results report successfully generated","Final results report was not generated")

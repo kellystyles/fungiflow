@@ -51,11 +51,12 @@ def minimap2(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_map.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_map.err")
 
-    cmd1 = ["singularity","exec",input_args.singularity_image,"minimap2","-ax","sr",filenames.assembly_fasta,filenames.trimmedf,filenames.trimmedr,"|","samtools","sort","-@",input_args.cpus,"-o",filenames.bamfile]
+    cmd1 = ["singularity","exec",input_args.singularity_image, \
+        "minimap2","-ax","sr",filenames.assembly_fasta,filenames.trimmedf,filenames.trimmedr,"|","samtools","sort","-@",input_args.cpus,"-o",filenames.bamfile]
     print(" ".join(cmd1))
     try:
-        print("executing mapping command using shell...")
         lib.execute_shell(cmd1,stdout,stderr)
+        lib.file_exists_exit(filenames.bamfile,"Minimap2 successfully generated BAM file.","Minimap2 mapping failed.")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -71,10 +72,12 @@ def index(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_index.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_index.err")
 
-    cmd1 = ["singularity","exec",input_args.singularity_image,"samtools","index","-@",input_args.cpus,filenames.bamfile,filenames.outfile]
+    cmd1 = ["singularity","exec",input_args.singularity_image, \
+        "samtools","index","-@",input_args.cpus,filenames.bamfile,filenames.outfile]
     print(" ".join(cmd1))
     try:
         lib.execute(cmd1,stdout,stderr)
+        lib.file_exists_exit(filenames.indexfile,"Samtools successfully indexed BAM file.","Samtools indexing failed.")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -90,10 +93,11 @@ def megablast(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_blast.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_blast.err")
         
-    cmd1 = ["singularity","exec",input_args.singularity_image,"blastn","-task","megablast","-query",filenames.assembly_fasta,"-db",input_args.nt_db,"-outfmt","\"6 qseqid staxids bitscore std\"","-max_target_seqs","1","-max_hsps","1","-num_threads",input_args.cpus,"-evalue","1e-25","-out",filenames.megablast_out]
-    print(" ".join(cmd1))
+    cmd1 = ["singularity","exec",input_args.singularity_image, \
+        "blastn","-task","megablast","-query",filenames.assembly_fasta,"-db",input_args.nt_db,"-outfmt","\"6 qseqid staxids bitscore std\"","-max_target_seqs","1","-max_hsps","1","-num_threads",input_args.cpus,"-evalue","1e-25","-out",filenames.megablast_out]
     try:
         lib.execute(cmd1,stdout,stderr)
+        lib.file_exists_exit(filenames.megablast_out,"MegaBLAST successfully identified contigs.","MegaBLAST failed.")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -109,16 +113,17 @@ def blobtools(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_blob.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_blob.err")
 
-    cmd1 = ["singularity","exec",input_args.singularity_image,"blobtools-blobtools_v1.1.1/blobtools","create","-i",filenames.assembly_fasta,"-b",filenames.bamfile,"-t",filenames.megablast_out,"-o",filenames.blob_json]
-    cmd2 = ["singularity","exec",input_args.singularity_image,"blobtools-blobtools_v1.1.1/blobtools","view","-i",filenames.blob_json]
-    cmd3 = ["singularity","exec",input_args.singularity_image,"blobtools-blobtools_v1.1.1/blobtools","plot","-i",filenames.blob_json]
-    print(" ".join(cmd1))
-    print(" ".join(cmd2))
-    print(" ".join(cmd3))
+    cmd1 = ["singularity","exec",input_args.singularity_image, \
+        "blobtools-blobtools_v1.1.1/blobtools","create","-i",filenames.assembly_fasta,"-b",filenames.bamfile,"-t",filenames.megablast_out,"-o",filenames.blob_json]
+    cmd2 = ["singularity","exec",input_args.singularity_image, \
+        "blobtools-blobtools_v1.1.1/blobtools","view","-i",filenames.blob_json]
+    cmd3 = ["singularity","exec",input_args.singularity_image, \
+        "blobtools-blobtools_v1.1.1/blobtools","plot","-i",filenames.blob_json]
     try:
         lib.execute(cmd1,stdout,stderr)
         lib.execute(cmd2,stdout,stderr)
         lib.execute(cmd3,stdout,stderr)
+        lib.file_exists_exit(filenames.blob_json,"Blobtools successfully generated files","Blobtools failed.")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -132,13 +137,13 @@ def main(input_args,filenames):
         filenames.trimmedf = input_args.trimmed_f
         filenames.trimmedr = input_args.trimmed_r
     
-    os.chdir(input_args.directory)
+    os.chdir(input_args.directory_new)
     blobplot_text = "   ____________\n___/  Blobplot  \_______________________________________________________________"
     lib.print_t(blobplot_text)
     lib.print_h(f"Generating Blobplot of {input_args.assembly}")
     lib.print_n(input_args)
     
-    blobpath = os.path.join("blobplots",input_args.array)
+    blobpath = os.path.abspath(input_args.directory_new,"blobplots")
     lib.make_path(blobpath)
     name = input_args.assembly.split(".")[0]
     filenames.bamfile = os.path.join(blobpath,f"{name}.bam")
@@ -155,7 +160,6 @@ def main(input_args,filenames):
     print("Blobbing and plotting")
     blobtools(input_args,filenames,blobpath)
     print(f"Blobplot script completed in {datetime.datetime.now() - start_time}")
-    lib.file_exists(filenames.blob_json,"Blobtools successfully generated files","Blobtools failed.")
 
 if __name__ == '__main__':
     main()

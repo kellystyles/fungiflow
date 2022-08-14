@@ -49,9 +49,9 @@ Several databases are needed for optional fungiflow modules to operate correctly
 python3 install.py --help
 ```
 Some of these databases are pretty large so the install may take several hours:
-    - Kraken2 standard database ( GB | ~1 hour with 4 CPUs); required for taxonomic filtering of short reads.
-    - ITS_Refseq_Fungi database ( GB | <1 hour with 4 CPUs); required for BLASTn of extracted ITS sequences.
-    - NCBI-nt database (4xx GB | ~12 hours with 4 CPUs); required for assigning taxonomy to contigs for the Blobplots module.
+    - Kraken2 standard database ( 213 GB | ~6 hours with 4 CPUs); required for taxonomic filtering of short reads.
+    - ITS_Refseq_Fungi database ( 162 Mb | 20 mins with 4 CPUs); required for BLASTn of extracted ITS sequences.
+    - NCBI-nt database (132 GB | ~4 hours with 4 CPUs); required for assigning taxonomy to contigs for the Blobplots module.
 
 ## Usage
 
