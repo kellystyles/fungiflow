@@ -468,7 +468,7 @@ def main(input_args,filenames):
         filenames.medaka_index = os.path.join(assembly_path,"medaka_consensus.bai")
         filenames.medaka_consensus_bam = os.path.join(assembly_path,"medaka_consensus.bam")
         filenames.medaka_sorted_bam = os.path.join(assembly_path,"medaka_sorted.bam")
-        filenames.assembly_sorted_index = os.path.join(assembly_path,"medaka_sorted.bai")
+        filenames.assembly_sorted_index = os.path.join(assembly_path,"medaka_sorted.bam.bai")
         filenames.pilon_consensus = os.path.join(assembly_path,"pilon.fasta")
         if lib.file_exists(filenames.assembly_fasta,"Reads already assembled! Skipping...","Performing hybrid assembly with Flye...") is False: 
             assembly_hybrid(input_args,filenames,assembly_path)

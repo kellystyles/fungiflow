@@ -64,7 +64,7 @@ def get_args():
 ### Begin Main Script ###
 def main():
     args = get_args()
-    lib.print_tu("⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂  \n")
+    lib.print_t("⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂  \n")
     start_time = datetime.datetime.now()
     print(args)
     

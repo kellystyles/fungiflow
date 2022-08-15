@@ -32,10 +32,10 @@ def file_exists(file,success_message,error_message):
     Returns error message if the above is False.
     """
     if os.path.isfile(file) is True and os.stat(file).st_size > 0:
-        print(success_message)
+        print_n(success_message)
         return True
     else:
-        print(error_message)
+        print_e(error_message)
         return False
 
 def file_exists_exit(file,success_message,error_message):
@@ -45,10 +45,10 @@ def file_exists_exit(file,success_message,error_message):
     Returns error message if the above is False and will exit script.
     """
     if os.path.isfile(file) is True and os.stat(file).st_size > 0:
-        print(success_message)
+        print_n(success_message)
         return True
     else:
-        print(error_message)
+        print_e(error_message)
         sys.exit()
 
 def file_exists_bool(filea,fileb,modifier,success_message,error_message):
@@ -58,10 +58,10 @@ def file_exists_bool(filea,fileb,modifier,success_message,error_message):
     """
     try:
         if os.stat(filea).st_size > (os.stat(fileb).st_size * modifier):
-            print(success_message)
+            print_n(success_message)
             return True
     except FileNotFoundError:
-        print(error_message)
+        print_e(error_message)
         return False
 
 def execute(command,stdout,stderr):
