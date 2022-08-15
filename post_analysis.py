@@ -143,7 +143,7 @@ def main(input_args,filenames):
     quast_text = "   _______\n___/ Quast \____________________________________________________________________"
     lib.print_t(quast_text)
 
-    quast_path = os.path.abspath(input_args.directory_new,"quast")
+    quast_path = os.path.join(input_args.directory_new,"quast")
     filenames.quast_report = os.path.join(quast_path,"transposed_report.tsv")
     lib.make_path(quast_path)
     if lib.file_exists(filenames.quast_report,"Quast already analysed the assembly!","Analysing the assembly with Quast") is False:
@@ -156,9 +156,9 @@ def main(input_args,filenames):
         tax_lookup_text = "   ___________________\n___/  Taxonomy Lookup  \________________________________________________________"        
         lib.print_t(tax_lookup_text)
 
-        itsx_output_path = os.path.abspath(input_args.directory_new,"ITSx")
+        itsx_output_path = os.path.join(input_args.directory_new,"ITSx")
         lib.make_path(itsx_output_path)
-        blastn_output_path = os.path.abspath(input_args.directory_new,"blastn")
+        blastn_output_path = os.path.join(input_args.directory_new,"blastn")
         filenames.blast_out = os.path.join(blastn_output_path,f"{input_args.array}_its_blastn.out")
         its_full = os.path.join(itsx_output_path,f"{input_args.array}.full.fasta")
         its_2 = os.path.join(itsx_output_path,f"{input_args.array}.ITS2.fasta")
@@ -189,7 +189,7 @@ def main(input_args,filenames):
         bgc_text = "   ____________\n___/ BGC search \_______________________________________________________________"
         lib.print_t(bgc_text)
 
-        antismash_out = os.path.abspath(input_args.directory_new,"antismash")
+        antismash_out = os.path.join(input_args.directory_new,"antismash")
         filenames.antismash_index = os.path.join(antismash_out,"index.html")
         if os.path.exists(antismash_out) is False:
             lib.make_path(antismash_out)
@@ -209,7 +209,7 @@ def main(input_args,filenames):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
         lib.print_n(final_df)
     
-    results_path = os.path.abspath(input_args.directory_new,"results")
+    results_path = os.path.join(input_args.directory_new,"results")
     lib.make_path(results_path)
     filenames.csv_output = os.path.join(results_path,f"{input_args.array}_results.csv")
     final_df.to_csv(filenames.csv_output, index=False)

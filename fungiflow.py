@@ -69,7 +69,7 @@ def main():
     print(args)
     
     ### MAKE INPUT DIR COMPLETE PATH
-    args.directory_new = os.path.abspath(args.directory,args.array)
+    args.directory_new = os.path.abspath(os.path.join(args.directory,args.array))
     lib.make_path(args.directory_new)
     os.chdir(args.directory_new)
 

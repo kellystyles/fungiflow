@@ -143,7 +143,7 @@ def main(input_args,filenames):
     lib.print_h(f"Generating Blobplot of {input_args.assembly}")
     lib.print_n(input_args)
     
-    blobpath = os.path.abspath(input_args.directory_new,"blobplots")
+    blobpath = os.path.join(input_args.directory_new,"blobplots")
     lib.make_path(blobpath)
     name = input_args.assembly.split(".")[0]
     filenames.bamfile = os.path.join(blobpath,f"{name}.bam")

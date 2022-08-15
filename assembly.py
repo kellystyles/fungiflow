@@ -392,7 +392,7 @@ def main(input_args,filenames):
     adapter_path = os.path.join(input_args.directory_new,"adapters")
     lib.make_path(adapter_path)
 
-    filenames.adapter_file = os.path.join("adapters",f"{str(input_args.array)}_adapters.fasta")
+    filenames.adapter_file = os.path.join(adapter_path,f"{str(input_args.array)}_adapters.fasta")
     if lib.file_exists(filenames.adapter_file,"Adapters already identified! Skipping...","Searching for adapter sequences in short reads") is False:
         find_adapters(input_args,filenames,adapter_path)
         lib.file_exists_exit(filenames.adapter_file,"Adapters identified!","Adapters not successfully extracted... check the logs and your inputs")

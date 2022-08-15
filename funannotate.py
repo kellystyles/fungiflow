@@ -103,12 +103,10 @@ def main(input_args,filenames):
     annotation_text = "   ____________\n___/ Annotation \_______________________________________________________________"
     lib.print_t(annotation_text)
     lib.print_h("Annotating assembly with Funannotate")
-    funannotate_path = os.path.abspath(directory_new,"funannotate")
+    funannotate_path = os.path.join(directory_new,"funannotate")
     lib.make_path(funannotate_path)
-    os.
     lib.print_n("Changing into Funannotate directory")
     os.chdir(funannotate_path)
-    cwd = "."
     filenames.funannotate_clean_fasta = os.path.join(funannotate_path,f"{input_args.array}_cleaned.fasta")
     filenames.funannotate_sort_fasta = os.path.join(funannotate_path,f"{input_args.array}_sorted.fasta")
     filenames.funannotate_mask_fasta = os.path.join(funannotate_path,f"{input_args.array}_masked.fasta")
@@ -122,7 +120,7 @@ def main(input_args,filenames):
     if lib.file_exists(funannotate_mask_fasta,"Assembly already masked by Funannotate! Skipping...","Masking repetitive regions with Funannotate mask") is False:
         funannotate_mask(input_args,funannotate_sort_fasta,funannotate_mask_fasta)
     if lib.file_exists(funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...","Predicting genes with Funannotate predict") is False:
-        funannotate_predict(input_args,cwd,funannotate_mask_fasta)
+        funannotate_predict(input_args,funannotate_path,funannotate_mask_fasta)
     
     lib.print_n("Changing back to main directory")
     os.chdir(input_args.directory_new)
