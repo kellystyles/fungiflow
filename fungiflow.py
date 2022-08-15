@@ -74,7 +74,7 @@ def main():
     os.chdir(args.directory_new)
 
     # Sets up class object for filenames
-    filenames = lib.Files(args.illumina_f,args.illumina_r)
+    filenames = lib.Files(args)
 
     # Running 'ASSEMBLY' module
     assembly.main(args,filenames)

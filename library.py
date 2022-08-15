@@ -9,9 +9,9 @@ Helper functions for the Fungiflow pipeline.
 
 # Creating the Class for the workflow filepaths
 class Files:
-    def __init__(self, short_forward, short_reverse):
-        self.shortf = short_forward
-        self.shortr = short_reverse
+    def __init__(self, input_args):
+        self.shortf = os.path.abspath(os.path.join(input_args.directory,input_args.illumina_f))
+        self.shortr = os.path.abspath(os.path.join(input_args.directory,input_args.illumina_r))
     def __str__(self):
         return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
 
