@@ -33,10 +33,13 @@ Clone this GitHub repositroy by entering ```git clone https://github.com/kellyst
 
 This workflow is designed to operate on an HPC, so a lot of cpus and memory is required. I would suggest a minimum of 8 cpus and 40 GB of memory, as some of the programs in the workflow require a lot of memory.
 
-To make this workflow repeatable, readable, and minimally difficult to operate, all the software needed has been packaged into a series of Singularity images. The only pre-requisite you need for the workflow to function other than a bash shell is Singularity.
+To make this workflow repeatable, readable, and minimally difficult to operate, all the software needed has been packaged into a series of Singularity images. The only dependencies required for the workflow to function are Singularity, Python 3.X and some Python packages.
 
 - bash environment (tested with Ubuntu 18.02)
 - Singularity >/ 3.5.3
+- Python >/ 3.6
+- pandas >/ 
+- 
 
 If you wish to use the optional Funannotate module, you may need to copy the `gm_key` file to `~/.gm_key` on the cluster or machine you are working on. You may need to obtain a new license from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi). Extract the `gm_key_64` file to `~/`
 

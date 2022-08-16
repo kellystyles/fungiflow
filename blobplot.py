@@ -130,7 +130,8 @@ def blobtools(input_args,filenames,blobpath):
 
 def main(input_args,filenames):
 
-    start_time = datetime.datetime.now()
+    lib.print_h("Initializing \'blobplot\' module...")
+    blob_start_time = datetime.datetime.now()
     if input_args is None:
         input_args = get_args()
         filenames = lib.Files(input_args.trimmed_f.split("_")[0])
@@ -138,7 +139,7 @@ def main(input_args,filenames):
         filenames.trimmedr = input_args.trimmed_r
     
     os.chdir(input_args.directory_new)
-    blobplot_text = "   ____________\n___/  Blobplot  \_______________________________________________________________"
+    blobplot_text = "  ____________\n___/  Blobplot  \_______________________________________________________________"
     lib.print_t(blobplot_text)
     lib.print_h(f"Generating Blobplot of {input_args.assembly}")
     lib.print_n(input_args)
@@ -151,15 +152,15 @@ def main(input_args,filenames):
     filenames.megablast_out = os.path.join(blobpath,f"{name}.out")
     filenames.blob_json = os.path.join(blobpath,f"{name}.blobDB.json")
     print(f"Blobpath = {blobpath} \nBAM file = {filenames.bamfile}")
-    print("Mapping trimmed reads to assembly with Minimap2")
+    print("Mapping trimmed reads to assembly with minimap2")
     minimap2(input_args,filenames,blobpath)
-    print("Sorting BAM with Samtools")
+    print("Sorting BAM with samtools")
     index(input_args,filenames,blobpath)
     print("Megablasting assembly")
     megablast(input_args,filenames,blobpath)
     print("Blobbing and plotting")
     blobtools(input_args,filenames,blobpath)
-    print(f"Blobplot script completed in {datetime.datetime.now() - start_time}")
+    print_h(f"Blobplot script completed in {datetime.datetime.now() - blob_start_time}")
 
 if __name__ == '__main__':
     main()
