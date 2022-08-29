@@ -45,16 +45,23 @@ def get_args():
 def install_kraken2_db(input_args,database_path):
     """
     Downloads the Kraken2 standard database.
+    Will first attempt to download the standard preformatted database (cmd1), else will attempt to download this same database library by library (cmds 4 & 5).
+    The library will then be built and cleaned (cmds 2 & 3)
     """
 
     stdout = "kraken2_db.out"
     stderr = "kraken2_db.err"
 
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2-build","--use-ftp","-i","--standard","--threads",input_args.cpus,"--db",database_path]
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2-build","--build","--threads",input_args.cpus,"--db",database_path]
-    cmd3 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2-build","--clean","--threads",input_args.cpus,"--db",database_path]
-    cmd4 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2-build","----download-library","human","--no-masking","--threads",input_args.cpus,"--db",database_path]
-    cmd5 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"kraken2-build","----download-library","UniVec","--no-masking","--threads",input_args.cpus,"--db",database_path]
+    cmd1 = ["kraken2-build","--use-ftp","-i","--standard","--threads",input_args.cpus,"--db",database_path]
+    cmd2 = ["kraken2-build","--build","--threads",input_args.cpus,"--db",database_path]
+    cmd3 = ["kraken2-build","--clean","--threads",input_args.cpus,"--db",database_path]
+    cmd4 = ["kraken2-build","----download-library","human","--no-masking","--threads",input_args.cpus,"--db",database_path]
+    cmd5 = ["kraken2-build","----download-library","UniVec","--no-masking","--threads",input_args.cpus,"--db",database_path]
+    if len(filenames.singularity) > 0: cmd1 = filenames.singularity + cmd11
+    if len(filenames.singularity) > 0: cmd2 = filenames.singularity + cmd2
+    if len(filenames.singularity) > 0: cmd3 = filenames.singularity + cmd3
+    if len(filenames.singularity) > 0: cmd4 = filenames.singularity + cmd4
+    if len(filenames.singularity) > 0: cmd5 = filenames.singularity + cmd5
 
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -85,10 +92,11 @@ def install_ncbi_its(input_args):
     stdout = "ncbi-its_db.out"
     stderr = "ncbi-its_db.err"
     
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"update_blastdb.pl","--passive","--decompress","ITS_RefSeq_Fungi"]
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"update_blastdb.pl","taxdb"]
+    cmd1 = ["update_blastdb.pl","--passive","--decompress","ITS_RefSeq_Fungi"]
+    cmd2 = ["update_blastdb.pl","taxdb"]
     cmd3 = ["tar","-xzf","taxdb.tar.gz"]
-
+    if len(filenames.singularity) > 0: cmd1 = filenames.singularity + cmd1
+    if len(filenames.singularity) > 0: cmd2 = filenames.singularity + cmd2
     print(" ".join(cmd1))
     print(" ".join(cmd2))
     print(" ".join(cmd3))
@@ -109,9 +117,11 @@ def install_ncbi_nt(input_args):
     stdout = "ncbi-nt_db.out"
     stderr = "ncbi-nt_db.err"
     
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"update_blastdb.pl","--passive","--decompress","nt" ]
-    cmd2 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity,"update_blastdb.pl","taxdb"]
+    cmd1 = ["update_blastdb.pl","--passive","--decompress","nt" ]
+    cmd2 = ["update_blastdb.pl","taxdb"]
     cmd3 = ["tar","-xzf","taxdb.tar.gz"]
+    if len(filenames.singularity) > 0: cmd1 = filenames.singularity + cmd1
+    if len(filenames.singularity) > 0: cmd2 = filenames.singularity + cmd2
 
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -136,12 +146,15 @@ def inspect(databases):
     cmds = []
     if "kraken2" in databases:
         kraken2 = ["kraken2-inspect",]
+        if len(filenames.singularity) > 0: kraken2 = filenames.singularity + kraken2
         cmds.append(kraken2)
     if "its" in databases:
         its = ["its",]
+        if len(filenames.singularity) > 0: its = filenames.singularity + its
         cmds.append(its)
     if "nt" in databases:
         nt = ["blastdbcmd",]
+        if len(filenames.singularity) > 0: nt = filenames.singularity + nt
         cmds.append(nt)
 
     try:

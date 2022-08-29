@@ -6,7 +6,7 @@ import sys
 import argparse
 import datetime
 import library as lib
-import assembly,blobplot,funannotate,post_analysis
+import assembly, blobplot, funannotate, post_analysis
 
 """
 Main script of the Fungiflow pipeline.
@@ -33,12 +33,12 @@ def get_args():
                             help='Amount of memory to use (in GB)', type=str, required=True)
         parser.add_argument('-ant', '--antismash', action='store_true',
                             help='Add this argument if you would like to search the assembly for BGCs')
-        parser.add_argument('-s', '--singularity', '--singularity', action='store',
-                            help='Primary Singularity image for Fungiflow', type=str, default=os.path.join("images","fungiflow.sif"))
+        parser.add_argument('-s', '--singularity_image', action='store',
+                            help='Primary Singularity image for Fungiflow', type=str)
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
-                            help='Singularity image for Funannotate', type=str, default=os.path.join("images","funannotate.sif"))
+                            help='Singularity image for Funannotate', type=str)
         parser.add_argument('-sa', '--singularity_antismash', action='store',
-                            help='Singularity image for antiSMASH', type=str, default=os.path.join("images","antismash.sif"))
+                            help='Singularity image for antiSMASH', type=str)
         parser.add_argument('-idb', '--its_db', action='store', default=os.path.join("databases","fungi_ITS_refseq","ITS"),
                             help='Path to ITS_refseq BLASTn database. Part of taxonomic module.', type=str)
         parser.add_argument('-kdb', '--kraken2_db', action='store', default=os.path.join("databases","kraken2_std"),
@@ -63,40 +63,40 @@ def get_args():
 
 ### Begin Main Script ###
 def main():
-    args = get_args()
+    input_args = get_args()
     lib.print_t("⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂  \n")
     start_time = datetime.datetime.now()
-    print(args)
-    
-    ### MAKE INPUT DIR COMPLETE PATH
-    args.directory_new = os.path.abspath(os.path.join(args.directory,args.array))
-    lib.make_path(args.directory_new)
-    os.chdir(args.directory_new)
+    print(input_args)
 
+    ### MAKE INPUT DIR COMPLETE PATH
+    input_args.directory_new = os.path.abspath(os.path.join(input_args.directory, input_args.array))
+    lib.make_path(input_args.directory_new)
+    os.chdir(input_args.directory_new)
+    
     # Sets up class object for filenames
-    filenames = lib.Files(args)
+    filenames = lib.Files(input_args)
 
     # Running 'ASSEMBLY' module
-    assembly.main(args,filenames)
+    assembly.main(input_args, filenames)
 
     # Running 'FUNANNOTATE' module
-    if args.singularity_funannotate is not None:
-        funannotate.main(args,filenames)
+    if input_args.singularity_funannotate is not None:
+        funannotate.main(input_args, filenames)
     else:
         lib.print_h("Skipping assembly annotation...")
         filenames.funannotate_gbk = filenames.assembly_fasta
 
     # Running 'POST_ANALYSIS' module
-    post_analysis.main(args,filenames)
+    post_analysis.main(input_args, filenames)
 
     # Running 'BLOBPLOT' module
-    if args.blobplot is not None:
-        blobplot.main(args,filenames)
+    if input_args.blobplot is not None:
+        blobplot.main(input_args, filenames)
 
     lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
     lib.print_h(f"Results saved to {filenames.csv_output}")
     lib.print_h("Output files are listed below:")
-    lib.print_n(filenames)
+    filenames.printer()
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂")
 
 if __name__ == '__main__':

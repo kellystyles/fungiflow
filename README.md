@@ -186,3 +186,7 @@ project directory
 │   │
 │   └───(array1_val)
 ```   
+### Speed
+Currently, fungiflow is designed for use in an HPC environment so will run quicker with more resources assigned to it. Below are some runtimes and hardware usage for a selection of fungal genomes.
+
+Work is been done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., blast). This will be implemented in a future update. 

@@ -24,10 +24,10 @@ def funannotate_clean(input_args,filenames):
     stderr = f"{input_args.array}_clean.err"
 
     lib.print_n("Cleaning assembly with funannotate clean")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate, \
-        "funannotate","clean","-i",filenames.assembly_fasta,"-o",filenames.funannotate_clean_fasta,"--cpus",input_args.cpus]
+    cmd = ["funannotate","clean","-i",filenames.assembly_fasta,"-o",filenames.funannotate_clean_fasta,"--cpus",input_args.cpus]
+    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd    
     try:
-        lib.execute(cmd1,stdout,stderr)
+        lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_clean_fasta, \
             "Assembly successfuly cleaned by Funannotate","Funannotate clean failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
@@ -46,10 +46,10 @@ def funannotate_sort(input_args,filenames):
     stderr = f"{input_args.array}_sort.err"
 
     lib.print_n("Sorting contigs with funannotate sort")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate, \
-        "funannotate","sort","-i",filenames.funannotate_clean_fasta,"-o",filenames.funannotate_sort_fasta]
+    cmd = ["funannotate","sort","-i",filenames.funannotate_clean_fasta,"-o",filenames.funannotate_sort_fasta]
+    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     try:
-        lib.execute(cmd1,stdout,stderr)
+        lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_sort_fasta, \
             "Assembly successfuly sorted by Funannotate","Funannotate sort failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
@@ -68,10 +68,10 @@ def funannotate_mask(input_args,filenames):
     stderr = f"{input_args.array}_mask.err"
 
     lib.print_n("Soft masking repetitive regions with funannotate mask")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate, \
-        "funannotate","mask","-i",filenames.funannotate_sort_fasta,"-o",filenames.funannotate_mask_fasta,"--cpus",input_args.cpus]
+    cmd = ["funannotate","mask","-i",filenames.funannotate_sort_fasta,"-o",filenames.funannotate_mask_fasta,"--cpus",input_args.cpus]
+    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     try:
-        lib.execute(cmd1,stdout,stderr)
+        lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_mask_fasta, \
             "Assembly successfully masked by Funannotate","Funannotate mask failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
@@ -90,10 +90,10 @@ def funannotate_predict(input_args,filenames,funannotate_path):
     stderr = f"{input_args.array}_predict.err"
     
     lib.print_n("Predicting genes with funannotate predict")
-    cmd1 = ["singularity","exec","-B","/nfs:/nfs",input_args.singularity_funannotate, \
-        "funannotate","predict","-i",filenames.funannotate_mask_fasta,"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
+    cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta,"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
+    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     try:
-        lib.execute(cmd1,stdout,stderr)
+        lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_gbk, \
             "Assembly genes successfully predicted with Funannotate","Funannotate predict failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
