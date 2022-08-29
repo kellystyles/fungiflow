@@ -95,7 +95,7 @@ def main():
 
     lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
     lib.print_h(f"Results saved to {filenames.csv_output}")
-    lib.print_h("Output files are listed below:")
+    lib.print_h("Output files and variables are listed below:")
     filenames.printer()
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂")
 
