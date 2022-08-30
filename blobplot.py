@@ -95,10 +95,11 @@ def megablast(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_blast.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_blast.err")
         
-    cmd = ["blastn","-task","megablast","-query",filenames.assembly_fasta,"-db",input_args.blob_db,"-outfmt","\"6 qseqid staxids bitscore std\"","-max_target_seqs","1","-max_hsps","1","-num_threads",input_args.cpus,"-evalue","1e-25","-out",filenames.megablast_out]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    cmd = f"blastn -task megablast -query {filenames.assembly_fasta} -db {input_args.blob_db} -outfmt \"6 qseqid staxids bitscore std\" -max_target_seqs 1 -max_hsps 1 -num_threads {input_args.cpus} -evalue 1e-25 -out {filenames.megablast_out}"
+    if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
+    commands = [cmd]
     try:
-        lib.execute(cmd,stdout,stderr)
+        lib.execute_shell(commands,stdout,stderr)
         lib.file_exists_exit(filenames.megablast_out,"MegaBLAST successfully identified contigs.","MegaBLAST failed.")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
@@ -115,7 +116,7 @@ def blobtools(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_blob.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_blob.err")
 
-    cmd1 = ["blobtools","create","-i",filenames.assembly_fasta,"-b",filenames.bamfile,"-t",filenames.megablast_out,"-o",os.path.join(blobpath,"")]
+    cmd1 = ["blobtools","create","-i",filenames.assembly_fasta,"-b",filenames.bamfile,"-t",filenames.megablast_out,"-o",os.path.join(blobpath,"assembly")]
     cmd2 = ["blobtools","view","-i",filenames.blob_json,"-o",os.path.join(blobpath,"")]
     cmd3 = ["blobtools","plot","-i",filenames.blob_json,"-o",os.path.join(blobpath,"")]
     if len(filenames.singularity) > 0: cmd1 = filenames.singularity + cmd1
@@ -156,14 +157,14 @@ def main(input_args,filenames):
     filenames.blob_json = os.path.join(blobpath,"assembly.blobDB.json")
     filenames.blob_png = os.path.join(blobpath,"assembly.blobDB.json.bestsum.phylum.p8.span.100.blobplot.read_cov.bam0.png")
     print(f"Blobpath = {blobpath} \nBAM file = {filenames.bamfile}")
-    print("Mapping trimmed reads to assembly with minimap2")
-    minimap2(input_args,filenames,blobpath)
-    print("Sorting BAM with samtools")
-    index(input_args,filenames,blobpath)
-    print("Megablasting assembly")
-    megablast(input_args,filenames,blobpath)
-    print("Blobbing and plotting")
-    blobtools(input_args,filenames,blobpath)
+    if lib.file_exists(filenames.bamfile, "Trimmed reads already mapped to contigs, skipping...","Mapping trimmed reads to contigs with minimap2") == False:
+        minimap2(input_args,filenames,blobpath)
+    if lib.file_exists(filenames.indexfile, "BAM file already sorted, skipping...","Sorting BAM file with samtools") == False:
+        index(input_args,filenames,blobpath)
+    if lib.file_exists(filenames.megablast_out, "Contigs already assigned with megablast, skipping...","Assigning contigs with megablast") == False:
+        megablast(input_args,filenames,blobpath)
+    if lib.file_exists(filenames.blob_png, "Blobtools already executed, skipping...","Running blobtools on input files") == False:
+        blobtools(input_args,filenames,blobpath)
     lib.print_h(f"Blobplot script completed in {datetime.datetime.now() - blob_start_time}")
 
 if __name__ == '__main__':

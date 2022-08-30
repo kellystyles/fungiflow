@@ -18,6 +18,14 @@ class Files:
             self.singularity = ["singularity", "exec", input_args.singularity_image]
         else:
             self.singularity = ""
+        if input_args.singularity_funannotate is not None: 
+            self.funannotate = ["singularity", "exec", input_args.singularity_funannotate]
+        else:
+            self.funannotate = ""
+        if input_args.singularity_antismash is not None: 
+            self.antismash = ["singularity", "exec", input_args.singularity_antismash]
+        else:
+            self.antismash = ""
     def __str__(self):
         return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
     def printer(self):
@@ -107,23 +115,28 @@ def execute_shell(command_list, stdout, stderr):
     # opens the stdout and stderr files for writing
     with open(stdout,  "wt") as out,  open(stderr,  "wt") as err:
         n = 2
-        # takes first command in command_list as first command, notice no `input=`
-        first = f"proc1 = subprocess.run([\"{command_list[0]}\"], stdout=subprocess.PIPE, stderr=err, shell=True)"
-        print(command_list[0])
-        exec(first)
-        # loops through remaining commands, excluding the last one
-        if len(command_list[1:-1]) > 2:
-            for i in command_list[1:-1]:
-                # takes output from previous process as input, outputting to stdout via PIPE (eqv. to `|` in shell)
-                print(i)
-                nom = f"proc{n} = subprocess.run([\"{i}\"], input=proc{n-1}.stdout, stdout=subprocess.PIPE, stderr=err, shell=True)"
-                n += 1
-                exec(nom)
-        # executing last command in command_list, this time writing to stdout, otherwise file won't be saved
-        if len(command_list) > 1:
-            last = f"proc{n} = subprocess.run([\"{command_list[-1]}\"], input=proc{n-1}.stdout, stdout=out, stderr=err, shell=True)"
-            print(command_list[-1])
-            exec(last)
+        # If just a single command in the list will execute without PIPE
+        if len(command_list) == 1:
+            print(command_list[0])
+            subprocess.run(command_list[0], stdout=out, stderr=err, shell=True)
+        else:
+            # takes first command in command_list as first command, notice no `input=` as with later processes
+            first = f"proc1 = subprocess.run([\"{command_list[0]}\"], stdout=subprocess.PIPE, stderr=err, shell=True)"
+            print(command_list[0])
+            exec(first)
+            # loops through remaining commands, excluding the last one
+            if len(command_list[1:-1]) > 2:
+                for i in command_list[1:-1]:
+                    # takes output from previous process as input, outputting to stdout via PIPE (eqv. to `|` in shell)
+                    print(i)
+                    nom = f"proc{n} = subprocess.run([\"{i}\"], input=proc{n-1}.stdout, stdout=subprocess.PIPE, stderr=err, shell=True)"
+                    n += 1
+                    exec(nom)
+            # executing last command in command_list, this time writing to stdout, otherwise file won't be saved
+            if len(command_list) > 1:
+                last = f"proc{n} = subprocess.run([\"{command_list[-1]}\"], input=proc{n-1}.stdout, stdout=out, stderr=err, shell=True)"
+                print(command_list[-1])
+                exec(last)
         
 def pickling(input_args, filenames):
     """

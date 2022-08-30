@@ -461,7 +461,7 @@ def main(input_args, filenames):
     if lib.file_exists(filenames.fastqc_out, "", "") == False:
         fastqc(input_args, filenames, trimmed_path)
 
-    if len(input_args.kraken2_db) > 0:
+    if input_args.kraken2_db is not None:
 
         tax_filter_text = "  _____________________\n___/ Taxonomic Filtering \______________________________________________________"
         lib.print_t(tax_filter_text)

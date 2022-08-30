@@ -25,7 +25,7 @@ def funannotate_clean(input_args,filenames):
 
     lib.print_n("Cleaning assembly with funannotate clean")
     cmd = ["funannotate","clean","-i",filenames.assembly_fasta,"-o",filenames.funannotate_clean_fasta,"--cpus",input_args.cpus]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd    
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd   
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_clean_fasta, \
@@ -47,7 +47,7 @@ def funannotate_sort(input_args,filenames):
 
     lib.print_n("Sorting contigs with funannotate sort")
     cmd = ["funannotate","sort","-i",filenames.funannotate_clean_fasta,"-o",filenames.funannotate_sort_fasta]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_sort_fasta, \
@@ -69,7 +69,7 @@ def funannotate_mask(input_args,filenames):
 
     lib.print_n("Soft masking repetitive regions with funannotate mask")
     cmd = ["funannotate","mask","-i",filenames.funannotate_sort_fasta,"-o",filenames.funannotate_mask_fasta,"--cpus",input_args.cpus]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_mask_fasta, \
@@ -91,7 +91,7 @@ def funannotate_predict(input_args,filenames,funannotate_path):
     
     lib.print_n("Predicting genes with funannotate predict")
     cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta,"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.funannotate_gbk, \

@@ -39,11 +39,11 @@ def get_args():
                             help='Singularity image for Funannotate', type=str)
         parser.add_argument('-sa', '--singularity_antismash', action='store',
                             help='Singularity image for antiSMASH', type=str)
-        parser.add_argument('-idb', '--its_db', action='store', default=os.path.join("databases","fungi_ITS_refseq","ITS"),
+        parser.add_argument('-idb', '--its_db', action='store',
                             help='Path to ITS_refseq BLASTn database. Part of taxonomic module.', type=str)
-        parser.add_argument('-kdb', '--kraken2_db', action='store', default=os.path.join("databases","kraken2_std"),
+        parser.add_argument('-kdb', '--kraken2_db', action='store',
                             help='Path to Kraken2 standard database. Part of taxonomic module.', type=str)
-        parser.add_argument('-bdb', '--blob_db', action='store', default=os.path.join("databases","NCBI_nt","nt"),
+        parser.add_argument('-bdb', '--blob_db', action='store',
                             help='Path to NCBI-nt database for blobtools. Part of blobtools module.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
                             help='Nanopore reads.', type=str)

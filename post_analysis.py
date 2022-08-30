@@ -35,11 +35,12 @@ def blastn(input_args,filenames,blast_path):
     stdout = os.path.join(blast_path,f"{input_args.array}.out")
     stderr = os.path.join(blast_path,f"{input_args.array}.err")
 
-    cmd = f"=blastn -db {input_args.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.blast_out}"
-    if len(filenames.singularity) > 0: cmd = " ".join(filenames.singularity) + " " + cmd
+    cmd = f"blastn -db {input_args.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.blast_out}"
+    if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
+    commands = [cmd]
     try:
         lib.print_n("BLASTn of ITS sequence against ITS DB")
-        lib.execute_shell(cmd,stdout,stderr)
+        lib.execute_shell(commands,stdout,stderr)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -126,7 +127,7 @@ def antismash(input_args,filenames,antismash_out):
     stderr = os.path.join(input_args.directory_new,f"{input_args.array}_antismash.err")
 
     cmd = ["antismash","--cpus",input_args.cpus,"--taxon","fungi","--fullhmmer","--genefinding-tool","glimmerhmm","--cc-mibig","--smcog-trees","--cb-general","--cb-subclusters","--cb-knownclusters","--minlength","5000","--output-dir",antismash_out,filenames.antismash_assembly]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    if len(filenames.antismash) > 0: cmd = filenames.antismash + cmd
     try:
         lib.print_n(f"Predicting gene clusters from {filenames.antismash_assembly} with antiSMASH")
         lib.execute(cmd,stdout,stderr)
@@ -163,7 +164,7 @@ def main(input_args,filenames):
         its_2 = os.path.join(itsx_path,f"{input_args.array}.ITS2.fasta")
         its_1 = os.path.join(itsx_path,f"{input_args.array}.ITS1.fasta")
         if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping","Need to run ITSx") is False:
-            #itsx(input_args,filenames,itsx_path)
+            itsx(input_args,filenames,itsx_path)
             lib.make_path(blastn_path)
             if lib.file_exists(its_full,"ITSx successfully extracted the full ITS sequence!","ITSx failed to extract the full ITS sequence. Checking for ITS2") == True:
                 filenames.its_fasta = its_full
