@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/bin/bash
 
 """
 This will find adapters in you sequence.fq.gz file. Once found you can run trimmomattic or bbduk to remove them
@@ -15,7 +15,7 @@ Written by Matt Storey, edited by Kelly Styles.
 #CLI arguements input .fq.gz file to be analysed for adapters
 FILE="$1"
 ADAP_FA="$2"
-echo $FILE $ADAP_FA
+echo "$FILE" "$ADAP_FA"
 
 # array of adapters (from trimmomatic etc)
 declare -A ADAP=([>Reverse_adapter]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTTG"
@@ -170,7 +170,13 @@ declare -A ADAP=([>Reverse_adapter]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATC
 [>PhiX_read1_adapter]="AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTGAAA"
 [>PhiX_read2_adapter]="AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATTAAAAAA"
 [>Bisulfite_R1]="AGATCGGAAGAGCACACGTCTGAAC"
-[>Bisulfite_R2]="AGATCGGAAGAGCGTCGTGTAGGGA")
+[>Bisulfite_R2]="AGATCGGAAGAGCGTCGTGTAGGGA"
+[>PrefixPE/1]="TACACTCTTTCCCTACACGACGCTCTTCCGATCT"
+[>PrefixPE/2]="GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT"
+[>PE1]="TACACTCTTTCCCTACACGACGCTCTTCCGATCT"
+[>PE1_rc]="AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTA"
+[>PE2]="GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT"
+[>PE2_rc]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC")
 
 #loop opver the array of adapters and grep them against the input file. zcat takes .gz as imput, could set up check for file type and make allowences for uncompressed files?
 for i in ${!ADAP[@]}; do
@@ -181,7 +187,7 @@ for i in ${!ADAP[@]}; do
         echo "This adapter was found:"
         echo "$i"
         echo "${ADAP[$i]}"
-        echo "$i" >> $ADAP_FA
-        echo "${ADAP[$i]}" >> $ADAP_FA
+        echo "$i" >> "$ADAP_FA"
+        echo "${ADAP[$i]}" >> "$ADAP_FA"
    fi
 done
