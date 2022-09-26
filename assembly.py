@@ -216,6 +216,8 @@ def assembly_short(input_args, filenames, assembly_path):
     lib.print_h(f"Assembling trimmed {input_args.array} reads with SPADES")
     try:
         lib.execute(cmd, stdout, stderr)
+        lib.file_exists_exit(filenames.funannotate_gbk, \
+            "Short reads successfulyl assembled with SPADes","SPADes assembly failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)   
@@ -478,29 +480,29 @@ def main(input_args, filenames):
         filenames.k_unclassifiedf = os.path.join(kraken2_path, f"{input_args.array}_unclass_1.fq")
         filenames.k_unclassifiedr = os.path.join(kraken2_path, f"{input_args.array}_unclass_2.fq")
 
-        if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.6, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False \
-        and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.6, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False:
+        if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False \
+        and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False:
             kraken2(input_args, filenames, kraken2_path, "short")
-            if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.6, "Forward short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True \
-            and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.6, "Reverse short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
+            if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Forward short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True \
+            and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Reverse short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
                 filenames.trimmedf = filenames.k_unclassifiedf
                 filenames.trimmedr = filenames.k_unclassifiedr
         else:
             filenames.trimmedf = filenames.k_unclassifiedf
             filenames.trimmedr = filenames.k_unclassifiedr
 
-        # long reads
-        filenames.kreport_long = os.path.join(kraken2_path, f"{input_args.array}_long.report")
-        filenames.k_long_unclassified = os.path.join(kraken2_path, f"{input_args.array}_long_unclass.fa")
-        filenames.k_long_classified = os.path.join(kraken2_path, f"{input_args.array}_long_class.fa")
-
-        if input_args.nanopore is not None:
-            if lib.file_exists_bool(filenames.k_long_unclassified, filenames.trimmedf, 0.6, "Long trimmed reads already filtered by Kraken2! Skipping...", "") == False:
-                kraken2(input_args, filenames, kraken2_path, "long")
-                if lib.file_exists_bool(filenames.k_long_unclassified, filenames.trimmedf, 0.6, "Long trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering long reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
-                    filenames.nanopore_corr = filenames.k_long_unclassified
-            else:
-                filenames.nanopore_corr = filenames.k_long_unclassified
+        # long reads - might not need to do this as it will incorrectly flag some reads as bacterial and repetitive regions as viral
+        # kraken2 is also designed for short reads, not long reads
+        #filenames.kreport_long = os.path.join(kraken2_path, f"{input_args.array}_long.report")
+        #filenames.k_long_unclassified = os.path.join(kraken2_path, f"{input_args.array}_long_unclass.fa")
+        #filenames.k_long_classified = os.path.join(kraken2_path, f"{input_args.array}_long_class.fa")
+        #if input_args.nanopore is not None:
+         #   if lib.file_exists_bool(filenames.k_long_unclassified, filenames.trimmedf, 0.6, "Long trimmed reads already filtered by Kraken2! Skipping...", "") == False:
+          #      kraken2(input_args, filenames, kraken2_path, "long")
+           #     if lib.file_exists_bool(filenames.k_long_unclassified, filenames.trimmedf, 0.6, "Long trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering long reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
+            #        filenames.nanopore_corr = filenames.k_long_unclassified
+            #else:
+             #   filenames.nanopore_corr = filenames.k_long_unclassified
     else:
         lib.print_h("Skipping taxonomic filtering of trimmed reads")    
 
