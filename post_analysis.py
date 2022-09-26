@@ -82,11 +82,11 @@ def quast(input_args,filenames,output_path):
 
     if os.path.exists(filenames.funannotate_gff) == True and os.stat(filenames.funannotate_gff).st_size > 0:
         lib.print_n(f"Funannotate annotations GFF file exists, analysing {filenames.funannotate_gff} and {filenames.assembly_fasta} with quast")
-        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-g",filenames.funannotate_gff,"-t",input_args.cpus,"--fungus","-L","-b"]
+        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-g",filenames.funannotate_gff,"-t",input_args.cpus,"--fungus","-L","-b","--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
         if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     else:
         lib.print_n(f"Funannotate annotations GFF file does not exist, analysing {filenames.assembly_fasta} with quast")
-        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b"]
+        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b","--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
         if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
 
     try:
@@ -125,7 +125,7 @@ def antismash(input_args,filenames,antismash_out):
     
     stdout = os.path.join(input_args.directory_new,f"{input_args.array}_antismash.out")
     stderr = os.path.join(input_args.directory_new,f"{input_args.array}_antismash.err")
-
+    
     cmd = ["antismash","--cpus",input_args.cpus,"--taxon","fungi","--fullhmmer","--genefinding-tool","glimmerhmm","--cc-mibig","--smcog-trees","--cb-general","--cb-subclusters","--cb-knownclusters","--minlength","5000","--output-dir",antismash_out,filenames.antismash_assembly]
     if len(filenames.antismash) > 0: cmd = filenames.antismash + cmd
     try:
@@ -151,20 +151,19 @@ def main(input_args,filenames):
         quast(input_args,filenames,quast_path)
     final_df = parse_quast(filenames,input_args.array)
 
-    if len(input_args.its_db) > 0:
-            
-        tax_lookup_text = "  ___________________\n___/  Taxonomy Lookup  \________________________________________________________"        
-        lib.print_t(tax_lookup_text)
+    tax_lookup_text = "  ___________________\n___/  Taxonomy Lookup  \________________________________________________________"        
+    lib.print_t(tax_lookup_text)
 
-        itsx_path = os.path.join(input_args.directory_new,"ITSx")
-        lib.make_path(itsx_path)
-        blastn_path = os.path.join(input_args.directory_new,"blastn")
-        filenames.blast_out = os.path.join(blastn_path,f"{input_args.array}_its_blastn.out")
-        its_full = os.path.join(itsx_path,f"{input_args.array}.full.fasta")
-        its_2 = os.path.join(itsx_path,f"{input_args.array}.ITS2.fasta")
-        its_1 = os.path.join(itsx_path,f"{input_args.array}.ITS1.fasta")
-        if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping","Need to run ITSx") is False:
-            itsx(input_args,filenames,itsx_path)
+    itsx_path = os.path.join(input_args.directory_new,"ITSx")
+    lib.make_path(itsx_path)
+    blastn_path = os.path.join(input_args.directory_new,"blastn")
+    filenames.blast_out = os.path.join(blastn_path,f"{input_args.array}_its_blastn.out")
+    its_full = os.path.join(itsx_path,f"{input_args.array}.full.fasta")
+    its_2 = os.path.join(itsx_path,f"{input_args.array}.ITS2.fasta")
+    its_1 = os.path.join(itsx_path,f"{input_args.array}.ITS1.fasta")
+    if lib.file_exists(its_full,"ITSx already extracted the ITS sequence! Skipping","Need to run ITSx") is False:
+        itsx(input_args,filenames,itsx_path)
+        if len(input_args.its_db) > 0:
             lib.make_path(blastn_path)
             if lib.file_exists(its_full,"ITSx successfully extracted the full ITS sequence!","ITSx failed to extract the full ITS sequence. Checking for ITS2") == True:
                 filenames.its_fasta = its_full
@@ -185,10 +184,10 @@ def main(input_args,filenames):
                     its_df = parse_blastp(filenames.blast_out,input_args.array)
                     print(its_df)
                     final_df = final_df.merge(its_df, on="ID")
-    else:
-        lib.print_h("Skipping taxonomy lookup of isolate")
+        else:
+            lib.print_h("Skipping taxonomy lookup of isolate")
 
-    if input_args.antismash > 0:
+    if input_args.antismash is not None:
 
         bgc_text = "  ____________\n___/ BGC search \_______________________________________________________________"
         lib.print_t(bgc_text)
@@ -209,7 +208,7 @@ def main(input_args,filenames):
             antismash(input_args,filenames,antismash_path)
 
     else:
-        lib.print_n("Skipping BGC search with anitSMASH. Use '--antismash' as a script argument if you would like to do this.")
+        lib.print_n("Skipping BGC search with antiSMASH. Use '--antismash' as a script argument if you would like to do this.")
 
     lib.print_n("Generating final dataframe")
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):
