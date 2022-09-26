@@ -95,7 +95,7 @@ def megablast(input_args,filenames,blobpath):
     stdout = os.path.join(blobpath,f"{input_args.array}_blast.out")
     stderr = os.path.join(blobpath,f"{input_args.array}_blast.err")
         
-    cmd = f"blastn -task megablast -query {filenames.assembly_fasta} -db {input_args.blob_db} -outfmt \"6 qseqid staxids bitscore std\" -max_target_seqs 1 -max_hsps 1 -num_threads {input_args.cpus} -evalue 1e-25 -out {filenames.megablast_out}"
+    cmd = f"blastn -task megablast -query {filenames.assembly_fasta} -db {input_args.blob_db} -outfmt \"6 qseqid staxids bitscore std sscinames sskingdoms stitle\" -max_target_seqs 1 -max_hsps 1 -num_threads {input_args.cpus} -evalue 1e-25 -out {filenames.megablast_out}"
     if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
     commands = [cmd]
     try:
