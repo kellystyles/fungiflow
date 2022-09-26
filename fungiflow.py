@@ -1,4 +1,4 @@
-#!/usr/bin/env
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import os
@@ -33,6 +33,8 @@ def get_args():
                             help='Amount of memory to use (in GB)', type=str, required=True)
         parser.add_argument('-ant', '--antismash', action='store_true',
                             help='Add this argument if you would like to search the assembly for BGCs')
+        parser.add_argument('-f', '--funannotate', action='store_true',
+                            help='Add this argument if you would like to annotate the assembly')
         parser.add_argument('-s', '--singularity_image', action='store',
                             help='Primary Singularity image for Fungiflow', type=str)
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
@@ -80,7 +82,7 @@ def main():
     assembly.main(input_args, filenames)
 
     # Running 'FUNANNOTATE' module
-    if input_args.singularity_funannotate is not None:
+    if input_args.funannotate is not None:
         funannotate.main(input_args, filenames)
     else:
         lib.print_h("Skipping assembly annotation...")
