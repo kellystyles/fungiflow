@@ -190,8 +190,8 @@ def assembly_short(input_args, filenames, assembly_path):
     lib.print_h(f"Assembling trimmed {input_args.array} reads with SPADES")
 
     lib.execute(cmd, stdout, stderr)
-    lib.file_exists_exit(filenames.assembly_fasta, \
-        "Short reads successfully assembled with SPADes", "SPADes assembly failed... check the logs and your inputs")
+    lib.file_exists_exit(filenames.funannotate_gbk, \
+        "Short reads successfulyl assembled with SPADes","SPADes assembly failed... check the logs and your inputs")
 
 
 def assembly_hybrid(input_args, filenames, assembly_path):
@@ -289,19 +289,19 @@ def samtools_index(input_args, filenames, assembly_path):
     lib.file_exists(filenames.assembly_sorted_index, \
         f"{filenames.medaka_sorted_sam} successfully indexed with samtools index", f"Indexing {filenames.medaka_sorted_sam} indexing with samtools failed")
 
-def pilon(input_args, filenames, assembly_path):
+def polypolish(input_args, filenames, assembly_path):
     """
     DEPRECATED
     """
     stdout = os.path.join(assembly_path, f"{input_args.array}_polypolish.out")
     stderr = os.path.join(assembly_path, f"{input_args.array}_polypolish.err")
-    cmd = ["pilon", f"-Xmx{int(int(input_args.mem)*0.8)}G", "--genome", filenames.medaka_consensus, "--bam", filenames.medaka_sorted_sam, "--outdir", assembly_path]
+    cmd = ["polypolish", f"-Xmx{int(int(input_args.mem)*0.8)}G", "--genome", filenames.medaka_consensus, "--bam", filenames.medaka_sorted_sam, "--outdir", assembly_path]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     try:
         print(" ".join(cmd))
         lib.execute(cmd, stdout, stderr)
         lib.file_exists(filenames.polypolish_consensus, \
-            f"Polishing {filenames.medaka_consensus} with pilon was successful", f"Polishing {filenames.medaka_sorted_sam} with pilon failed")    
+            f"Polishing {filenames.medaka_consensus} with polypolish was successful", f"Polishing {filenames.medaka_sorted_sam} with polypolish failed")    
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)

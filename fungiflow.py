@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os
 import sys
 import argparse
@@ -37,25 +35,44 @@ def get_args():
                             help='Add this argument if you would like to annotate the assembly')
         parser.add_argument('-s', '--singularity_image', action='store',
                             help='Primary Singularity image for Fungiflow', type=str)
+        parser.add_argument('-data', '--database_path', action='store',
+                            help='Path to installed databases', type=str)
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
-                            help='Singularity image for Funannotate', type=str)
+                            help='Singularity image for Funannotate', type=str, required=False)
         parser.add_argument('-sa', '--singularity_antismash', action='store',
-                            help='Singularity image for antiSMASH', type=str)
+                            help='Singularity image for antiSMASH', type=str, required=False)
+        parser.add_argument('-its', '--its', action='store_true',
+                            help='Search assembly for ITS sequences. Part of post-analysis module.')
+        parser.add_argument('-k', '--kraken2', action='store_true',
+                            help='Run trimmed reads against Kraken2 standard database. \
+                                Will save unclassified reads (i.e., not matching the standard database), \
+                                    which will be used for assembly. Part of taxonomic module.')
+        parser.add_argument('-e', '--eggnog', action='store_true',
+                            help='Functionally annotate the assembly proteins with eggnog. \
+                                Part of annotation module.')
+        parser.add_argument('-b', '--blobplot', action='store_true', 
+                            help='Run blobtools module on output assembly. \
+                                Part of blobtools module.')
         parser.add_argument('-idb', '--its_db', action='store',
-                            help='Path to ITS_refseq BLASTn database. Part of taxonomic module.', type=str)
+                            help='Path to alternative ITS_refseq BLASTn database.', type=str)
         parser.add_argument('-kdb', '--kraken2_db', action='store',
-                            help='Path to Kraken2 standard database. Part of taxonomic module.', type=str)
-        parser.add_argument('-bdb', '--blob_db', action='store',
-                            help='Path to NCBI-nt database for blobtools. Part of blobtools module.', type=str)
+                            help='Path to alternative Kraken2 standard database.', type=str)
+        parser.add_argument('-bdb', '--blob_db', action='store', 
+                            help='Path to alternative NCBI-nt database for blobtools.', type=str)
+        parser.add_argument('-edb', '--eggnog_db', action='store', 
+                            help='Path to alternative eggnog database for blobtools.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
-                            help='Nanopore reads.', type=str)
+                            help='Nanopore reads.', type=str, required=False)
         parser.add_argument('-t', '--type', action='store', default="isolate", 
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
         parser.add_argument('-minlen', '--minimum_length', action='store', default="2000", 
-                            help='Minimum length of long-reads to retain during QC processes. Default is 2000 bp.', type=str)                            
-        parser.add_argument('-b', '--blobplot', action='store_true', 
-                            help='Prepare blobplots of assembly')            
+                            help='Minimum length of long-reads to retain during QC processes. \
+                                Default is 2000 bp.', type=str)
+        parser.add_argument('--dry_run', action='store', default="False", 
+                            help='Perform a dry run of the pipeline and check the \
+                                input files, databases and expected output files', type=str)                                                        
+
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
         parser.print_help(sys.stderr)
@@ -70,7 +87,10 @@ def main():
     start_time = datetime.datetime.now()
     print(input_args)
 
-    ### MAKE INPUT DIR COMPLETE PATH
+    # Check databases
+    lib.check_databases(input_args)
+    
+    ### MAKE INPUT DIR ABSOLUTE PATH
     input_args.directory_new = os.path.abspath(os.path.join(input_args.directory, input_args.array))
     lib.make_path(input_args.directory_new)
     os.chdir(input_args.directory_new)
@@ -92,11 +112,11 @@ def main():
     post_analysis.main(input_args, filenames)
 
     # Running 'BLOBPLOT' module
-    if input_args.blobplot is not None:
+    if input_args.blob_db is not None:
         blobplot.main(input_args, filenames)
 
     lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
-    lib.print_h(f"Results saved to {filenames.csv_output}")
+    lib.print_h(f"Results saved to {filenames.results_csv}")
     lib.print_h("Output files and variables are listed below:")
     filenames.printer()
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂")

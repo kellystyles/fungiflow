@@ -90,12 +90,58 @@ def funannotate_predict(input_args,filenames,funannotate_path):
     stderr = f"{input_args.array}_predict.err"
     
     lib.print_n("Predicting genes with funannotate predict")
-    cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta,"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
+    cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta, \
+        "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
-        lib.file_exists_exit(filenames.funannotate_gbk, \
-            "Assembly genes successfully predicted with Funannotate","Funannotate predict failed... check the logs and your inputs")
+        lib.file_exists(filenames.funannotate_gbk, \
+            "Assembly genes successfully predicted with Funannotate predict","Funannotate predict failed... check the logs and your inputs")
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def eggnog_annotate(input_args,filenames,funannotate_path):
+    """
+    Runs eggnog mapper to functionally annotate predicted protein sequences.
+    """
+
+    stdout = f"{input_args.array}_annotate.out"
+    stderr = f"{input_args.array}_annotate.err"
+
+    lib.print_n("Annotating CDS with eggnog mapper")
+    cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",input_args.eggnog_db, \
+        "-o",os.path.join(funannotate_path,"eggnog",input_args.array),"--decorate_gff",filenames.funannotate_gff, \
+            "--tax_scope","4751,33154,2759,1"]
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
+    if int(input_args.mem) > 45: cmd = cmd + ["--dbmem"]
+    try:
+        lib.execute(cmd,stdout,stderr)
+        lib.file_exists(filenames.eggnog_annotations, \
+            "CDS successfully annotated with eggnog mapper","eggnog mapper failed... check the logs and your inputs")
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def funannotate_annotate(input_args,filenames,funannotate_path):
+    """
+    Runs `funannotate predict` on assembly file to predict genes.
+
+    Input:      Funannotate predict_results folder
+    Output:     functionally annotated assembly GBK file
+    """
+
+    stdout = f"{input_args.array}_annotate.out"
+    stderr = f"{input_args.array}_annotate.err"
+    
+    lib.print_n("Annotating CDS with funannotate annotate")
+    cmd = ["funannotate","annotate","-i",os.path.join(funannotate_path,"predict_results"),"-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
+    if lib.file_exists(filenames.eggnog_annotations,"","") is True: cmd = cmd + ["--eggnog",filenames.eggnog]
+    if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
+    try:
+        lib.execute(cmd,stdout,stderr)
+        lib.file_exists(filenames.funannotate_func_gbk, \
+            "CDS successfully annotated with Funannotate annotate","Funannotate annotate failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -116,6 +162,9 @@ def main(input_args,filenames):
     filenames.funannotate_mask_fasta = os.path.join(funannotate_path,f"{input_args.array}_masked.fasta")
     filenames.funannotate_gbk = os.path.join(funannotate_path,"predict_results",f"{input_args.array}.gbk")
     filenames.funannotate_gff = os.path.join(funannotate_path,"predict_results",f"{input_args.array}.gff3")
+    filenames.funannotate_prots = os.path.join(funannotate_path,"predict_results",f"{input_args.array}.proteins.fa")
+    filenames.eggnog_annotations = os.path.join(funannotate_path,"eggnog",f"{input_args.array}.emapper.annotations")
+    filenames.funannotate_func_gbk = os.path.join(funannotate_path,"annotate_results",f"{input_args.array}.gbk")
 
     if lib.file_exists(filenames.funannotate_clean_fasta,"Assembly already cleaned by Funannotate! Skipping...","") is False:
         funannotate_clean(input_args,filenames)
@@ -125,7 +174,11 @@ def main(input_args,filenames):
         funannotate_mask(input_args,filenames)
     if lib.file_exists(filenames.funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
         funannotate_predict(input_args,filenames,funannotate_path)
-    
+    if lib.file_exists(filenames.eggnog,"Functional annotation already completed with eggnog","") is False:
+        eggnog_annotate(input_args,filenames,funannotate_path)
+    if lib.file_exists(filenames.funannotate_func_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
+        funannotate_annotate(input_args,filenames,funannotate_path)
+
     lib.print_n("Changing back to main directory")
     os.chdir(input_args.directory_new)
     lib.print_h(f"funannotate module completed in {datetime.datetime.now() - funannotate_start_time}")

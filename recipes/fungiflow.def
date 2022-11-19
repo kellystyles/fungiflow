@@ -5,6 +5,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
 %labels
     Author: Kelly Styles
     Version: 0.3
+    Contact: kellystyles0@gmail.com
 
 %post
     cat /etc/apt/sources.list
@@ -35,10 +36,10 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     # Install micromaba
     conda create -n environ mamba -c conda-forge -c defaults
     conda activate environ
-    mamba install -y -c conda-forge -c bioconda -y kraken2 python=3.8 pilon spades flye masurca fmlrc \
+    mamba install -y -c conda-forge -c bioconda -y kraken2 python=3.8 spades flye masurca fmlrc \
     racon medaka krona itsx fastqc nanocomp minimap2 seaborn docopt tqdm wget pyyaml git pysam blobtools
     
-    mamba update -y kraken2 pilon spades flye masurca fmlrc \
+    mamba update -y kraken2 spades flye masurca fmlrc \
     racon medaka krona itsx fastqc nanocomp minimap2 seaborn docopt tqdm wget pyyaml git blobtools
     mamba install -y -c bioconda pysam --update-deps
     mamba clean -a
@@ -54,6 +55,10 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     tar xvzf BBMap_38.96.tar.gz && rm BBMap_38.96.tar.gz
     mv bbmap/* /usr/bin/
     rm -r bbmap
+    # - Polypolish
+    wget https://github.com/rrwick/Polypolish/releases/download/v0.5.0/polypolish-linux-x86_64-musl-v0.5.0.tar.gz
+    tar xvzf polypolish-linux-x86_64-musl-v0.5.0.tar.gz
+    mv polypolish* /usr/bin/
     # - RopeBWT2
     wget https://github.com/lh3/ropebwt2/archive/refs/tags/sgdp.tar.gz
     tar -xvzf sgdp.tar.gz
@@ -116,7 +121,7 @@ MirrorURL: http://us.archive.ubuntu.com/ubuntu/
     echo -ne "FMLRC " && fmlrc -version
     echo -ne "Racon " && racon --version
     medaka --version
-    pilon --version
+    polypolish --version
     echo -ne "Minimap2 " && minimap2 --version
     samtools --version | grep "samtools 1" 
     echo -ne "Blobtools " && blobtools --version
