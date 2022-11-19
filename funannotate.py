@@ -101,18 +101,18 @@ def funannotate_predict(input_args,filenames,funannotate_path):
         print(e.returncode)
         print(e.output)
 
-def eggnog_annotate(input_args,filenames,funannotate_path):
+def eggnog_annotate(input_args,filenames,eggnog_path):
     """
     Runs eggnog mapper to functionally annotate predicted protein sequences.
     """
 
-    stdout = f"{input_args.array}_annotate.out"
-    stderr = f"{input_args.array}_annotate.err"
+    stdout = os.path.join(eggnog_path,f"{input_args.array}_eggnog_annotate.out")
+    stderr = os.path.join(eggnog_path,f"{input_args.array}_eggnog_annotate.err")
 
     lib.print_n("Annotating CDS with eggnog mapper")
     cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",input_args.eggnog_db, \
-        "-o",os.path.join(funannotate_path,"eggnog",input_args.array),"--decorate_gff",filenames.funannotate_gff, \
-            "--tax_scope","4751,33154,2759,1"]
+        "-o",os.path.join(eggnog_path,input_args.array),"--decorate_gff",filenames.funannotate_gff, \
+            "--tax_scope","4751,33154,2759,1","--override"]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     if int(input_args.mem) > 45: cmd = cmd + ["--dbmem"]
     try:
@@ -154,7 +154,9 @@ def main(input_args,filenames):
     lib.print_t(annotation_text)
     lib.print_h("Annotating assembly with Funannotate")
     funannotate_path = os.path.join(input_args.directory_new,"funannotate")
+    eggnog_path = os.path.join(funannotate_path, "eggnog")
     lib.make_path(funannotate_path)
+    lib.make_path(eggnog_path)
     lib.print_n("Changing into Funannotate directory")
     os.chdir(funannotate_path)
     filenames.funannotate_clean_fasta = os.path.join(funannotate_path,f"{input_args.array}_cleaned.fasta")
@@ -174,7 +176,7 @@ def main(input_args,filenames):
         funannotate_mask(input_args,filenames)
     if lib.file_exists(filenames.funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
         funannotate_predict(input_args,filenames,funannotate_path)
-    if lib.file_exists(filenames.eggnog,"Functional annotation already completed with eggnog","") is False:
+    if lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
         eggnog_annotate(input_args,filenames,funannotate_path)
     if lib.file_exists(filenames.funannotate_func_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
         funannotate_annotate(input_args,filenames,funannotate_path)
