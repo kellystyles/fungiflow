@@ -112,14 +112,14 @@ def main():
     post_analysis.main(input_args, filenames)
 
     # Running 'BLOBPLOT' module
-    if input_args.blob_db is not None:
+    if input_args.blobplot is not None:
         blobplot.main(input_args, filenames)
 
-    lib.print_h(f"Script completed assembly and analysis of the sequence data in {datetime.datetime.now() - start_time}")
     lib.print_h(f"Results saved to {filenames.results_csv}")
     lib.print_h("Output files and variables are listed below:")
     filenames.printer()
-    lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂")
+    print("\n")
+    lib.print_tu(f"⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished in {datetime.datetime.now() - start_time} ⁂⁂⁂⁂⁂⁂⁂⁂")
 
 if __name__ == '__main__':
     main()

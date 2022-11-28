@@ -204,9 +204,9 @@ def check_databases(input_args):
     try: 
         if input_args.database_path is not None:
             if input_args.blobplot is True:
-                blob_db = os.path.join(input_args.database_path, "NCBI_nt")
+                blob_db = os.path.join(input_args.database_path, "NCBI_nt", "nt")
             if input_args.its is True:
-                its_db = os.path.join(input_args.database_path, "fungi_ITS")
+                its_db = os.path.join(input_args.database_path, "fungi_ITS", "ITS_RefSeq_Fungi")
             if input_args.kraken2 is True:
                 kraken2_db = os.path.join(input_args.database_path, "kraken2_std")
             if input_args.eggnog is True:
@@ -231,44 +231,58 @@ def check_databases(input_args):
     except IndexError:
         print("Please supply a value for `--database_path`")
 
-    print(blob_db, its_db, kraken2_db, eggnog_db)
     # Checks if key files are present in each database and assigns the main
     # `input_args` Class the individual databases.
     # Should the database files not exist, as determined by `file_exists_list`,
     # will add this database path to a list.
     c = []
-    ncbi_nt = os.path.join(blob_db, "nt.00.nhd")
-    taxdb = os.path.join(blob_db, "taxdb.bti")
-    if file_exists_list([ncbi_nt, taxdb], "Blobplot DB is present", "Blobplot DB is not present. \
-        Please supply a path via `--blobplot_db` or run install.py again.") is False:
-        c.append(blob_db)            
-    else:
-        input_args.blobplot_db = blob_db
-    ncbi_its = os.path.join(its_db,"ITS_RefSeq_Fungi.nsq")
-    taxdb = os.path.join(its_db, "taxdb.bti")
-    if file_exists_list([ncbi_its, taxdb], "ITS DB is present", "ITS DB is not present. \
-        Please supply a path via `--its_db` or run install.py again.") is False:
-        c.append(its_db)
-    else:
-        input_args.its_db = its_db
-    hash = os.path.join(kraken2_db, "hash.k2d")
-    opts = os.path.join(kraken2_db, "opts.k2d")
-    taxo = os.path.join(kraken2_db, "taxo.k2d")
-    if file_exists_list([hash, opts, taxo], "kraken2 DB is present", "kraken2 DB is not present. \
-        Please supply a path via `--kraken2_db` or run install.py again.") is False:
-        c.append(kraken2_db)
-    else:
-        input_args.kraken2_db = kraken2_db    
-    dmnd = os.path.join(eggnog_db, "eggnog_proteins.dmnd")
-    taxa = os.path.join(eggnog_db, "eggnog.taxa.db")
-    main = os.path.join(eggnog_db, "eggnog.db")
-    prots = os.path.join(eggnog_db, "e5.proteomes.faa")
-    if file_exists_list([dmnd, taxa, main, prots], "eggnog DB is present", "eggnog DB is not present. \
-        Please supply a path via `--eggnog_db` or run install.py again.") is False:
-        c.append(eggnog_db)
-    else:
-        input_args.eggnog_db = eggnog_db    
-
+    try:
+        ncbi_nt = os.path.join(input_args.database_path, "NCBI_nt", "nt.00.nhd")
+        taxdb = os.path.join(input_args.database_path, "NCBI_nt", "taxdb.bti")
+        if file_exists_list([ncbi_nt, taxdb], "Blobplot DB is present", "Blobplot DB is not present. \
+            Please supply a path via `--blobplot_db` or run install.py again.") is False:
+            c.append(blob_db)            
+        else:
+            input_args.blobplot_db = blob_db
+        print(blob_db)
+    except UnboundLocalError:
+        pass
+    try:
+        ncbi_its = os.path.join(input_args.database_path, "fungi_ITS", "ITS_RefSeq_Fungi.nsq")
+        taxdb = os.path.join(input_args.database_path, "fungi_ITS", "taxdb.bti")
+        if file_exists_list([ncbi_its, taxdb], "ITS DB is present", "ITS DB is not present. \
+            Please supply a path via `--its_db` or run install.py again.") is False:
+            c.append(its_db)
+        else:
+            input_args.its_db = its_db
+        print(its_db)
+    except UnboundLocalError:
+        pass
+    try:
+        hash = os.path.join(kraken2_db, "hash.k2d")
+        opts = os.path.join(kraken2_db, "opts.k2d")
+        taxo = os.path.join(kraken2_db, "taxo.k2d")
+        if file_exists_list([hash, opts, taxo], "kraken2 DB is present", "kraken2 DB is not present. \
+            Please supply a path via `--kraken2_db` or run install.py again.") is False:
+            c.append(kraken2_db)
+        else:
+            input_args.kraken2_db = kraken2_db    
+        print(kraken2_db)
+    except UnboundLocalError:
+        pass
+    try:
+        dmnd = os.path.join(eggnog_db, "eggnog_proteins.dmnd")
+        taxa = os.path.join(eggnog_db, "eggnog.taxa.db")
+        main = os.path.join(eggnog_db, "eggnog.db")
+        prots = os.path.join(eggnog_db, "e5.proteomes.faa")
+        if file_exists_list([dmnd, taxa, main, prots], "eggnog DB is present", "eggnog DB is not present. \
+            Please supply a path via `--eggnog_db` or run install.py again.") is False:
+            c.append(eggnog_db)
+        else:
+            input_args.eggnog_db = eggnog_db    
+        print(eggnog_db)
+    except UnboundLocalError:
+        pass
     # will exit program if one or more database(s) was missing files.
     if len(c) > 0:
         print_e("There are issues with the following databases:")

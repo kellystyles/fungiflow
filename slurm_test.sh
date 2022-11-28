@@ -9,6 +9,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=kelly.styles@vuw.ac.nz
 
+module load old-mod-system/Miniconda3/4.9.2
 module load singularity/3.7.3
 
 source activate fungiflow

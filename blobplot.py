@@ -157,13 +157,13 @@ def main(input_args,filenames):
     filenames.blob_json = os.path.join(blobpath,"assembly.blobDB.json")
     filenames.blob_png = os.path.join(blobpath,"assembly.blobDB.json.bestsum.phylum.p8.span.100.blobplot.read_cov.bam0.png")
     print(f"Blobpath = {blobpath} \nBAM file = {filenames.bamfile}")
-    if lib.file_exists(filenames.bamfile, "Trimmed reads already mapped to contigs, skipping...","Mapping trimmed reads to contigs with minimap2") == False:
+    if lib.file_exists(filenames.bamfile, "Trimmed reads already mapped to contigs, skipping...","Mapping trimmed reads to contigs with minimap2") is False:
         minimap2(input_args,filenames,blobpath)
-    if lib.file_exists(filenames.indexfile, "BAM file already sorted, skipping...","Sorting BAM file with samtools") == False:
+    if lib.file_exists(filenames.indexfile, "BAM file already sorted, skipping...","Sorting BAM file with samtools") is False:
         index(input_args,filenames,blobpath)
-    if lib.file_exists(filenames.megablast_out, "Contigs already assigned with megablast, skipping...","Assigning contigs with megablast") == False:
+    if lib.file_exists(filenames.megablast_out, "Contigs already assigned with megablast, skipping...","Assigning contigs with megablast") is False:
         megablast(input_args,filenames,blobpath)
-    if lib.file_exists(filenames.blob_png, "Blobtools already executed, skipping...","Running blobtools on input files") == False:
+    if lib.file_exists(filenames.blob_png, "Blobtools already executed, skipping...","Running blobtools on input files") is False:
         blobtools(input_args,filenames,blobpath)
     lib.print_h(f"Blobplot script completed in {datetime.datetime.now() - blob_start_time}")
 

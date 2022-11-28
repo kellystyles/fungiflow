@@ -297,19 +297,21 @@ def parse_antismash(input_args, filenames, results_path):
     """
 
     contents = open_json(filenames.antismash_json)
-    print(len(contents))
     df = parse_json(contents, filenames.antismash_json)
-    df.to_csv(filenames.bgc_results)
-    plot_violin(df, input_args, results_path)
-    plot_swarm(df, input_args, results_path)
+    try:
+        df.to_csv(filenames.bgc_results)
+        plot_violin(df, input_args, results_path)
+        plot_swarm(df, input_args, results_path)
 
-    flat_df = pd.DataFrame()
-    flat_df["Assembly"] = str(input_args.array)
-    flat_df["BGC_count"] = df.shape[0]
-    flat_df["contig_edge_proportion"] = df['partial'].count() / df['partial'].size
-    flat_df["kc_proportion"] = df['kc_mibig_acc'].count() / df['kc_mibig_acc'].size
+        flat_df = pd.DataFrame()
+        flat_df["Assembly"] = str(input_args.array)
+        flat_df["BGC_count"] = df.shape[0]
+        flat_df["contig_edge_proportion"] = df['partial'].count() / df['partial'].size
+        flat_df["kc_proportion"] = df['kc_mibig_acc'].count() / df['kc_mibig_acc'].size
+        return flat_df
 
-    return flat_df
+    except KeyError:
+        print("No BGCs. Skipping BGC plots.")
 
 def main(input_args,filenames):
 
