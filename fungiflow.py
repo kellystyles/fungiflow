@@ -62,13 +62,18 @@ def get_args():
         parser.add_argument('-edb', '--eggnog_db', action='store', 
                             help='Path to alternative eggnog database for blobtools.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
-                            help='Nanopore reads.', type=str, required=False)
+                            help='Path to MinION reads.', type=str, required=False)
         parser.add_argument('-t', '--type', action='store', default="isolate", 
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
         parser.add_argument('-minlen', '--minimum_length', action='store', default="2000", 
                             help='Minimum length of long-reads to retain during QC processes. \
                                 Default is 2000 bp.', type=str)
+        parser.add_argument('-mtm', '--min_training_models', action='store', default="200", 
+                            help='Mininum number of predicted models to train Augustus. \
+                                Default is 200.', type=str)
+        parser.add_argument('--careful', action='store_true',
+                            help='Assembles reads with SPAdes using lower k-mer values and runs in single cell mode.')
         parser.add_argument('--dry_run', action='store', default="False", 
                             help='Perform a dry run of the pipeline and check the \
                                 input files, databases and expected output files', type=str)                                                        
@@ -102,7 +107,7 @@ def main():
     assembly.main(input_args, filenames)
 
     # Running 'FUNANNOTATE' module
-    if input_args.funannotate is not None:
+    if input_args.funannotate is True:
         funannotate.main(input_args, filenames)
     else:
         lib.print_h("Skipping assembly annotation...")
@@ -112,7 +117,7 @@ def main():
     post_analysis.main(input_args, filenames)
 
     # Running 'BLOBPLOT' module
-    if input_args.blobplot is not None:
+    if input_args.blobplot is True:
         blobplot.main(input_args, filenames)
 
     lib.print_h(f"Results saved to {filenames.results_csv}")

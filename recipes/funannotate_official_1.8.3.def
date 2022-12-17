@@ -20,6 +20,13 @@ From: nextgenusfs/funannotate
     mkdir /usr/bin/gmes_linux_64/GeneMark-E-tests/EP/test && cd /usr/bin/gmes_linux_64/GeneMark-E-tests/EP/test
     ../../../gmes_petap.pl --seq ../input/genome.fasta --EP --dbep ../input/proteins.fasta --verbose --cores=8 --max_intergenic 10000 --mask_penalty 0
     
+    # InterProScan install
+    wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.59-91.0/interproscan-5.59-91.0-64-bit.tar.gz
+    wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.59-91.0/interproscan-5.59-91.0-64-bit.tar.gz.md5
+    md5sum -c interproscan-5.59-91.0-64-bit.tar.gz.md5
+    tar -pxvzf interproscan-5.59-91.0-64-bit.tar.gz
+    python3 setup.py interproscan.properties
+
     # EggNOG-mapper install
     pip3 install eggnog-mapper
     

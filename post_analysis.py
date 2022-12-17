@@ -175,81 +175,8 @@ def get_location(location):
     Output: location coordinates
     """
     loc_ = location.split(":")
+    # adds 1 to the starting base value to be inclusive of that base
     return int(loc_[0].lstrip("[")), int(loc_[1].rstrip("]"))
-
-def parse_json(json_object,json_file):
-    """
-    Extracts information about the BGCs from a JSON object,
-    including knownclusterblast data.
-    Input: JSON object (from open_json), JSON file (str)
-    Output: pandas array of information
-    """
-    bgc_list = []
-    array = pd.DataFrame()
-    bgc_num = 1
-    types_c = 0
-    input_file = str(json_file.split("\\")[-1].split(".")[0])
-    print(len(json_object))
-    for i in range(len(json_object['records'])):
-    # obtains a list of the BGC types searched for in the records
-        if "antismash.detection.hmm_detection" in json_object['records'][i]["modules"]:
-            while types_c < 1:
-                types = json_object['records'][i]["modules"]["antismash.detection.hmm_detection"]["enabled_types"]
-                print(types)
-                types_c += 1
-        # loops through candidate clusters and extract information about each cluster
-        for j in range(len(json_object['records'][i]['features'])):
-            record = json_object['records'][i]['features'][j]
-            kc_record = json_object['records'][i]["modules"]
-            if 'cand_cluster' in record['type']:
-                for g in range(len(record["qualifiers"]['product'])):
-                    product = record["qualifiers"]['product'][g]
-                # prepares dict and adds information to this dict
-                a = {}
-                edge = record["qualifiers"]["contig_edge"][0]
-                bgc_begin, bgc_end = get_location(record["location"])
-                bgc_length = bgc_end - bgc_begin
-                a["file"] = input_file
-                a["ID"] = int(bgc_num)
-                a["partial"] = edge
-                a["BGC_type"] = product
-                a["BGC_location"] = f"{bgc_begin}:{bgc_end}"
-                a["BGC_length"] = bgc_length
-                bgc_num += 1
-                # extracts the known cluster information
-                # adapted from the above notebook
-                if "antismash.modules.clusterblast" in kc_record:
-                    for kc in kc_record["antismash.modules.clusterblast"]["knowncluster"]["results"]:
-                        kc_total_hits = int(kc["total_hits"])
-                        if kc_total_hits > 0:
-                            a["kc_total_hits"] = kc_total_hits
-                            a["kc_mibig_acc"] = kc["ranking"][0][0]["accession"]
-                            a["kc_desc"] = kc["ranking"][0][0]["description"]
-                            a["kc_type"] = kc["ranking"][0][0]["cluster_type"]
-                            a["kc_hits"] = int(kc["ranking"][0][1]["hits"])
-                            a["kc_core_gene_hits"] = int(kc["ranking"][0][1]["core_gene_hits"])
-                            a["kc_blast_score"] = int(kc["ranking"][0][1]["blast_score"])
-                            a["kc_synteny_score"] = int(kc["ranking"][0][1]["synteny_score"])
-                            a["kc_core_bonus"] = int(kc["ranking"][0][1]["core_bonus"])
-                        else:
-                            a["kc_total_hits"] = kc_total_hits
-                            a["kc_mibig_acc"] = ""
-                            a["kc_desc"] = ""
-                            a["kc_type"] = ""
-                            a["kc_hits"] = 0
-                            a["kc_core_gene_hits"] = 0
-                            a["kc_blast_score"] = 0
-                            a["kc_synteny_score"] = 0
-                            a["kc_core_bonus"] = 0                           
-                bgc_list.append(a)
-                # might need to add an else statement here like above but with `kc_total_hits = 0`
-
-    # prepares a pandas dataframe from all the dicts
-    array = pd.DataFrame(bgc_list)
-    if "kc_total_hits" in array:
-        array["kc_total_hits"] = array["kc_total_hits"].fillna(0).astype(int)
-    
-    return array
 
 def plot_violin(dataframe, input_args, results_path):
     """
@@ -287,7 +214,109 @@ def plot_swarm(dataframe, input_args, results_path):
     ax.get_figure().savefig(os.path.join(results_path,f"{input_args.array}_contigedge_vs_bgclength_kc.svg"))
     plt.clf()
 
-def parse_antismash(input_args, filenames, results_path):
+def parse_json(json_object,json_file):
+    """
+    Extracts information about the BGCs from a JSON object,
+    including knownclusterblast data.
+    Input: JSON object (from open_json), JSON file (str)
+    Output: pandas array of information
+    """
+    bgc_list = []
+    array = pd.DataFrame()
+    bgc_num = 1
+    types_c = 0
+    input_file = str(json_file.split("\\")[-1].split(".")[0])
+    for i in range(len(json_object['records'])):
+        contig = json_object['records'][i]['id'].split("_")[0]
+        # obtains a list of the BGC types searched for in the records
+        if "antismash.detection.hmm_detection" in json_object['records'][i]["modules"]:
+            while types_c < 1:
+                types = json_object['records'][i]["modules"]["antismash.detection.hmm_detection"]["enabled_types"]
+                #print(types)
+                types_c += 1
+        # loops through candidate clusters and extract information about each cluster
+        for j in range(len(json_object['records'][i]['features'])):
+            record = json_object['records'][i]['features'][j]
+            kc_record = json_object['records'][i]["modules"]
+            if 'cand_cluster' in record['type']:
+                # prepares dict and adds information to this dict
+                a = {}
+                product = record["qualifiers"]['product']
+                edge = record["qualifiers"]["contig_edge"][0]
+                bgc_begin, bgc_end = get_location(record["location"])
+                bgc_length = bgc_end - bgc_begin
+                a["file"] = input_file
+                a["contig"] = contig
+                a["partial"] = edge
+                a["BGC_type"] = product
+                a["BGC_location"] = record["location"].lstrip("[").rstrip("]")#f"{bgc_begin}:{bgc_end}"
+                a["BGC_length"] = bgc_length
+                a["protocluster"] = record["qualifiers"]["protoclusters"][0]
+                a["kind"] = record["qualifiers"]["kind"][0]
+                # extracts the known cluster information
+                # adapted from the above notebook
+                if "antismash.modules.clusterblast" in kc_record:
+                    for kc in kc_record["antismash.modules.clusterblast"]["knowncluster"]["results"]:
+                        kc_total_hits = int(kc["total_hits"])
+                        if kc_total_hits > 0:
+                            a["kc_total_hits"] = kc_total_hits
+                            a["kc_mibig_acc"] = kc["ranking"][0][0]["accession"]
+                            a["kc_desc"] = kc["ranking"][0][0]["description"]
+                            a["kc_type"] = kc["ranking"][0][0]["cluster_type"]
+                            a["kc_hits"] = int(kc["ranking"][0][1]["hits"])
+                            a["kc_core_gene_hits"] = int(kc["ranking"][0][1]["core_gene_hits"])
+                            a["kc_blast_score"] = int(kc["ranking"][0][1]["blast_score"])
+                            a["kc_synteny_score"] = int(kc["ranking"][0][1]["synteny_score"])
+                            a["kc_core_bonus"] = int(kc["ranking"][0][1]["core_bonus"])
+                        else:
+                            a["kc_total_hits"] = kc_total_hits
+                            a["kc_mibig_acc"] = ""
+                            a["kc_desc"] = ""
+                            a["kc_type"] = ""
+                            a["kc_hits"] = 0
+                            a["kc_core_gene_hits"] = 0
+                            a["kc_blast_score"] = 0
+                            a["kc_synteny_score"] = 0
+                            a["kc_core_bonus"] = 0                           
+                    bgc_list.append(a)
+                    # might need to add an else statement here like above but with `kc_total_hits = 0`
+                bgc_num += 1
+            else:
+                pass
+    # prepares a pandas dataframe from all the dicts
+    array = pd.DataFrame(bgc_list)
+    if "kc_total_hits" in array:
+        array["kc_total_hits"] = array["kc_total_hits"].fillna(0).astype(int)
+    
+    # code to remove duplicate BGCs resulting from 'neighbouring' BGCs
+    # makes a list of all 'neighbouring' clusters
+    try:
+        x = array.index[array['kind'] == "neighbouring"].tolist()
+        for i in x:
+            n = x[0]
+            for j in range(len(array.loc[i]["BGC_type"])):
+                n += 1
+                og_left, og_right = array.loc[i]["BGC_location"].split(":")[0], array.loc[i]["BGC_location"].split(":")[1]
+                # checks if the BGCs are in the same contig
+                if array.loc[i]["contig"] == array.loc[n]["contig"]:
+                    # checks if the 'BGC_type' is in the 'neihgbouring' 'BGC_type' list
+                    if str(array.loc[n]["BGC_type"][0]) in array.loc[i]["BGC_type"]:
+                        # checks if the location is within the range of the original 'location'
+                        left, right = array.loc[n]["BGC_location"].split(":")[0], array.loc[n]["BGC_location"].split(":")[1]
+                        if left >= og_left and right <= og_right:
+                            array.drop([n], axis=0, inplace=True)
+    except KeyError:
+        pass
+    
+    if len(array) > 0:
+        # removes list syntax from 'BGC_type'
+        array['BGC_type'] = array['BGC_type'].astype(str).str.replace("[\]\[]",'').str.replace("'",'')
+        # assigns an ID to each BGC
+        array.insert(1, 'ID', range(1, 1 + len(array)))
+
+    return array
+
+def parse_antismash(input_args, filenames):
     """
     Will open antiSMASH JSON and parse to retrieve information about the number 
     and type of each BGC identified by antiSMASH for a given output folder.
@@ -300,14 +329,20 @@ def parse_antismash(input_args, filenames, results_path):
     df = parse_json(contents, filenames.antismash_json)
     try:
         df.to_csv(filenames.bgc_results)
-        plot_violin(df, input_args, results_path)
-        plot_swarm(df, input_args, results_path)
 
-        flat_df = pd.DataFrame()
-        flat_df["Assembly"] = str(input_args.array)
-        flat_df["BGC_count"] = df.shape[0]
-        flat_df["contig_edge_proportion"] = df['partial'].count() / df['partial'].size
-        flat_df["kc_proportion"] = df['kc_mibig_acc'].count() / df['kc_mibig_acc'].size
+        flat = {}
+        flat["ID"] = input_args.array
+        flat["BGC_count"] = str(df.shape[0])
+        flat["contig_edge_proportion"] = round(int(df['partial'].value_counts().loc["True"]) / int(df['partial'].size), 2)
+        flat["kc_proportion"] = round(len(df[df['kc_mibig_acc'] != '']) / int(df['kc_mibig_acc'].size), 2)
+        bgc_list = []
+        bgc_list.append(df['BGC_type'].unique().tolist())
+        flat["BGC_types"] = bgc_list
+        flat["BGC_mean_length"] = round(df['BGC_length'].mean(), 2)
+        flat["BGC_median_length"] = round(df['BGC_length'].median(), 2)
+
+        flat_df = pd.DataFrame.from_dict(flat)
+        
         return flat_df
 
     except KeyError:
@@ -370,6 +405,7 @@ def main(input_args,filenames):
     else:
         lib.print_h("Skipping taxonomy lookup of isolate")
 
+    # Run antiSMASH if present in the input arguments
     if input_args.antismash is not None:
 
         bgc_text = "  ____________\n___/ BGC search \_______________________________________________________________"
@@ -378,6 +414,9 @@ def main(input_args,filenames):
         antismash_path = os.path.join(input_args.directory_new,"antismash")
         filenames.antismash_json = os.path.join(antismash_path,f"{input_args.array}.json")
         filenames.antismash_svg = os.path.join(results_path,f"{input_args.array}_bgctype_vs_bgclength.svg")
+        filenames.bgc_results = os.path.join(results_path,f"{input_args.array}_bgc.csv")
+
+        # If antiSMASH JSON does not exist, run antiSMASH
         if lib.file_exists(filenames.antismash_json,f"antiSMASH already analysed!",f"Need to run antiSMASH") is False:
             # need to remove existing failed antiSMASH directory otherwise antiSMASH will exit
             # then remake it
@@ -391,11 +430,19 @@ def main(input_args,filenames):
             else:
                 filenames.antismash_assembly = filenames.assembly_fasta
             antismash(input_args,filenames,antismash_path)
-            if lib.file_exists(filenames.antismash_json,"","") is True:
-                if lib.file_exists(filenames.antismash_svg,f"antiSMASH summary plots already generated!",f"Plotting antiSMASH results summary") is False:
-                    filenames.bgc_results = os.path.join(results_path,f"{input_args.array}_bgc.csv")
-                    bgc_df = parse_antismash(input_args, filenames, results_path)
-                    final_df = final_df.merge(bgc_df, on="Assembly")
+        
+        # If the antiSMASH JSON file exists, parse it and plot some figures
+        # Might need to add in an exception to catch any errors arising from trying to parse an incomplete antiSMASH run
+        if lib.file_exists(filenames.antismash_json,"","") is True:
+            bgc_df = parse_antismash(input_args, filenames)
+            print(bgc_df)
+            try:
+                final_df = final_df.merge(bgc_df, on="ID")
+            except TypeError:
+                print("No BGCs identified. Continuing...")
+            if lib.file_exists(filenames.antismash_svg, f"BGC plots already exist", f"Plotting BGC results for {input_args.array}") is False and len(bgc_df) > 1:
+                plot_swarm(bgc_df, input_args, results_path)
+                plot_violin(bgc_df, input_args, results_path)
 
     else:
         lib.print_n("Skipping BGC search with antiSMASH. Use '--antismash' as a script argument if you would like to do this.")

@@ -9,6 +9,14 @@ Helper functions for the Fungiflow pipeline.
 
 # Creating the Class for the workflow filepaths
 class Files:
+    """
+    This Class object will take as input the short read file paths and from there can be used to store all
+    other pipeline filenames.
+    It also will initialize lists to append Singularity commands to the front of relevant BASH commands if
+    Singularity container paths are supplied.
+    This Class has two printer functions, one for printing the current filenames stored in the Class object,
+    and one for printing all the files from this Class that exist and have a size >0.
+    """
     def __init__(self, input_args):
         # defines paths for short reads
         self.shortf = os.path.abspath(os.path.join(input_args.directory, input_args.illumina_f))
@@ -26,8 +34,12 @@ class Files:
             self.antismash = ["singularity", "exec", input_args.singularity_antismash]
         else:
             self.antismash = ""
+    
+    # function to print all filenames currently in this Class object
     def __str__(self):
         return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
+    
+    # printer function that will print each file in filenames that exists and has a size >0
     def printer(self):
         for k,  v in vars(self).items():
             try:

@@ -8,7 +8,7 @@ import library as lib
 The assembly module of the Fungiflow pipeline.
 """
 
-def find_adapters(input_args, filenames, adapter_path):
+def find_adapters(input_args, filenames, trimmed_path):
     """
     Finds adapter sequences in raw read files.  
     
@@ -16,8 +16,8 @@ def find_adapters(input_args, filenames, adapter_path):
     Outputs:    FASTA file containing identified adapter sequences.
     """
 
-    stdout = os.path.join(adapter_path, f"adapter_{input_args.array}.out")
-    stderr = os.path.join(adapter_path, f"adapter_{input_args.array}.err")
+    stdout = os.path.join(trimmed_path, f"adapter_{input_args.array}.out")
+    stderr = os.path.join(trimmed_path, f"adapter_{input_args.array}.err")
 
     adapter_sh = os.path.join(os.path.dirname(os.path.realpath(__file__)), "adap_ID.sh")
 
@@ -177,14 +177,19 @@ def assembly_short(input_args, filenames, assembly_path):
     stdout = os.path.join(assembly_path, f"{input_args.array}.out")
     stderr = os.path.join(assembly_path, f"{input_args.array}.err")
 
+    # Defines the command based on input arguments
     if input_args.type == "metagenomic":
         cmd = ["spades.py", "--meta", "--threads", input_args.cpus, "--memory", input_args.mem, \
                 "-k", "21, 33, 55, 77, 99, 127", \
                     "--pe1-1", filenames.trimmedf, "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
     else:
-        cmd = ["spades.py", "--isolate", "--threads", input_args.cpus, "--memory", input_args.mem, \
-                "-k", "21, 33, 55, 77, 99, 127", "--pe1-1", filenames.trimmedf, \
-                    "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
+        if input_args.careful is True:
+            cmd = ["spades.py", "--isolate", "--threads", input_args.cpus, "--memory", input_args.mem, \
+                     "--sc", "--pe1-1", filenames.trimmedf, "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
+        else:
+            cmd = ["spades.py", "--isolate", "--threads", input_args.cpus, "--memory", input_args.mem, \
+                    "-k", "21, 33, 55, 77, 99, 127", "--pe1-1", filenames.trimmedf, \
+                        "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
     # Assembly with SPADES
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     lib.print_h(f"Assembling trimmed {input_args.array} reads with SPADES")
@@ -289,24 +294,12 @@ def samtools_index(input_args, filenames, assembly_path):
     lib.file_exists(filenames.assembly_sorted_index, \
         f"{filenames.medaka_sorted_sam} successfully indexed with samtools index", f"Indexing {filenames.medaka_sorted_sam} indexing with samtools failed")
 
-def pilon(input_args, filenames, assembly_path):
-    """
-    DEPRECATED
-    """
-    stdout = os.path.join(assembly_path, f"{input_args.array}_polypolish.out")
-    stderr = os.path.join(assembly_path, f"{input_args.array}_polypolish.err")
-    cmd = ["pilon", f"-Xmx{int(int(input_args.mem)*0.8)}G", "--genome", filenames.medaka_consensus, "--bam", filenames.medaka_sorted_sam, "--outdir", assembly_path]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
-    try:
-        print(" ".join(cmd))
-        lib.execute(cmd, stdout, stderr)
-        lib.file_exists(filenames.polypolish_consensus, \
-            f"Polishing {filenames.medaka_consensus} with pilon was successful", f"Polishing {filenames.medaka_sorted_sam} with pilon failed")    
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
-
 def polypolish(input_args, filenames, assembly_path):
+    """
+    Polishes an assembly with polypolish.
+    Input: medaka consensus FASTA, short reads mapped and sorted to medaka consensus SAM
+    Output: polypolish consensus FASTA 
+    """
     stdout = os.path.join(assembly_path, f"{input_args.array}_polypolish.out")
     stderr = os.path.join(assembly_path, f"{input_args.array}_polypolish.err")
     cmd = ["polypolish", filenames.medaka_consensus, filenames.medaka_sorted_sam, ">", filenames.polypolish_consensus]
@@ -388,17 +381,13 @@ def main(input_args, filenames):
     trim_text = "  __________\n___/ Trimming \_________________________________________________________________"
     lib.print_t(trim_text)
 
-    adapter_path = os.path.join(input_args.directory_new, "adapters")
-    lib.make_path(adapter_path)
-
-    filenames.adapter_file = os.path.join(adapter_path, f"{str(input_args.array)}_adapters.fasta")
-    if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") == False:
-        find_adapters(input_args, filenames, adapter_path)
-        lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
-
     trimmed_path = os.path.join(input_args.directory_new, "trimmed")
-    print(trimmed_path)
     lib.make_path(trimmed_path)
+
+    filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
+    if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
+        find_adapters(input_args, filenames, trimmed_path)
+        lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
 
     filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
     filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")
@@ -479,7 +468,6 @@ def main(input_args, filenames):
         filenames.polypolish_consensus = os.path.join(assembly_path, "polypolish.fasta")
         if lib.file_exists(filenames.assembly_fasta, "Reads already assembled! Skipping...", "Performing hybrid assembly with Flye...") == False: 
             assembly_hybrid(input_args, filenames, assembly_path)
-            print("hello")
         polishing_text = "  ___________\n___/ Polishing \_________________________________________________________________"
         lib.print_t(polishing_text)
         if lib.file_exists(filenames.polypolish_consensus, "Hybrid assembly already polished! Skipping...", "Polishing hybrid assembly...") == False:

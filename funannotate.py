@@ -91,12 +91,26 @@ def funannotate_predict(input_args,filenames,funannotate_path):
     
     lib.print_n("Predicting genes with funannotate predict")
     cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta, \
-        "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus,"--names",input_args.array]
+        "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus,"--name",input_args.array,"--min_training_models",input_args.min_training_models]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
-        lib.file_exists(filenames.funannotate_gbk, \
-            "Assembly genes successfully predicted with Funannotate predict","Funannotate predict failed... check the logs and your inputs")
+        if lib.file_exists(filenames.funannotate_gbk, \
+            "Assembly genes successfully predicted with Funannotate predict","") is False:
+            with open(stderr, "r") as f:
+                lines = f.readlines()
+                if "error, file not found: data/training.fna" in lines[-2]:
+                    gme_cmd = ["gmes_petap.pl","--ES","--max_intron","3000","--soft_mask","2000","--cores 24","--sequence", \
+                        os.path.join(funannotate_path,"predict_misc","genome.softmasked.fa"),"--fungus","--min_contig","2000", \
+                            "--work_dir",os.path.join(funannotate_path,"predict_misc")]
+                    if len(filenames.funannotate) > 0: gme_cmd = filenames.funannotate + gme_cmd
+                    lib.print_n("GeneMark ES could not predict genes from the assembly as it is too fragmented. Will try to optiize the parameters for low-coverage assembly...")
+                    lib.execute(gme_cmd,stdout,stderr)
+                    cmd = cmd + ["--genemark_gtf",os.path.join(funannotate_path,"predict_misc","genemark.gtf")]
+                    lib.execute(cmd,stdout,stderr)
+                lib.file_exists(filenames.funannotate_gbk, \
+                    "Assembly genes successfully predicted with Funannotate predict","Funannotate predict failed... check the logs and your inputs")
+
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -114,8 +128,10 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
         "-o",output_prefix,"--decorate_gff",filenames.funannotate_gff, \
             "--tax_scope","4751,33154,2759,1"]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
+    # If there is sufficient memory, load the entire diamond DB into memory
     if int(input_args.mem) > 45: cmd = cmd + ["--dbmem"]
-    if lib.file_exists(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits"), "", "") is True: cmd = cmd + ["--resume"]
+    # If a hits file from a previosu run is present, resume the run
+    if os.path.isfile(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits")) is True: cmd = cmd + ["--resume"]
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists(filenames.eggnog_annotations, \
@@ -177,10 +193,10 @@ def main(input_args,filenames):
         funannotate_mask(input_args,filenames)
     if lib.file_exists(filenames.funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
         funannotate_predict(input_args,filenames,funannotate_path)
-    if lib.file_exists(filenames.funannotate_gbk,"","") is True \
-        and lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
-        eggnog_annotate(input_args,filenames,eggnog_path)
-    if lib.file_exists(filenames.funannotate_func_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
+    #if lib.file_exists(filenames.funannotate_gbk,"","") is True \
+     #   and lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
+      #  eggnog_annotate(input_args,filenames,eggnog_path)
+    if lib.file_exists(filenames.funannotate_func_gbk,"Functional annotation with Funannotate! Skipping...","") is False:
         funannotate_annotate(input_args,filenames,funannotate_path)
 
     lib.print_n("Changing back to main directory")
