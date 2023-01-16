@@ -28,7 +28,7 @@ The overall workflow is defined by several modules:
     4. Blobtools generates blobplots
 
 ![Overview of fungiflow pipeline](https://github.com/kellystyles/fungiflow/blob/main/workflow.png)
-Overview of fungiflow pipeline
+*Overview of fungiflow pipeline*
 
 ## Installation
 Clone this GitHub repositroy by entering ```git clone https://github.com/kellystyles/fungiflow.git``` in the directory you would like to install in. You could add this directory to your PATH. 
@@ -48,11 +48,9 @@ conda deactivate
 This workflow is designed to operate on an HPC, so a lot of cpus and memory is required. I would suggest a minimum of 8 cpus and 40 GB of memory, as some of the programs in the workflow require a lot of memory.
 
 If you wish to use the optional Funannotate module, you will need to obtain a new license to use GeneMark-ES software, obtainable from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi). Extract the `gm_key_64` file to `~/` as so:
-'''
+```
 tar -xvzf gm_key_64.tar.gz -O gm_key & mv gm_key ~/.gm_key
-'''
-
-~To check that all the necessary files are present the `check_install.sh` script can be executed from `/fungiflow/scripts`.~
+```
 
 ### Databases
 
@@ -66,11 +64,12 @@ All core databases are bundled within the Singularity containers so you can perf
     - NCBI-nt database (132 GB | ~4 hours); required for assigning taxonomy to contigs for the Blobplots module.
 
 ## Usage
-
-Usage can be shown using `--help`.
+A typical run of the core modules can be run like:
 ```
-python3 fungiflow.py --help
-
+python3 fungiflow.py -if shortf_reads_path -ir shortr_reads_path -data database_path
+```
+Usage can be shown using `python3 fungiflow.py --help`.
+```
 usage: fungiflow.py [-h] -d DIRECTORY -if
                     ILLUMINA_F -ir ILLUMINA_R -a     
                     ARRAY -c CPUS -m MEM [-ant]      

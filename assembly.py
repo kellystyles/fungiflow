@@ -43,7 +43,7 @@ def trimmomatic(input_args, filenames, trimmed_path):
     cmd = ["TrimmomaticPE", "-threads", input_args.cpus, "-trimlog", filenames.trimlog_file, \
         filenames.shortf, filenames.shortr, filenames.trimmedf, filenames.utrimmedf, \
             filenames.trimmedr, filenames.utrimmedr, \
-                f"ILLUMINACLIP:{filenames.adapter_file}:2:30:10:4:4:/true", \
+                #f"ILLUMINACLIP:{filenames.adapter_file}:2:30:10:4:4:/true", \
                     "TRAILING:9", "SLIDINGWINDOW:4:15", "MINLEN:36"]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
 
@@ -184,7 +184,7 @@ def assembly_short(input_args, filenames, assembly_path):
                     "--pe1-1", filenames.trimmedf, "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
     else:
         if input_args.careful is True:
-            cmd = ["spades.py", "--isolate", "--threads", input_args.cpus, "--memory", input_args.mem, \
+            cmd = ["spades.py", "--threads", input_args.cpus, "--memory", input_args.mem, \
                      "--sc", "--pe1-1", filenames.trimmedf, "--pe1-2", filenames.trimmedr, "-o", assembly_path] 
         else:
             cmd = ["spades.py", "--isolate", "--threads", input_args.cpus, "--memory", input_args.mem, \
@@ -384,10 +384,11 @@ def main(input_args, filenames):
     trimmed_path = os.path.join(input_args.directory_new, "trimmed")
     lib.make_path(trimmed_path)
 
-    filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
-    if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
-        find_adapters(input_args, filenames, trimmed_path)
-        lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
+    #?# if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
+    #filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
+    #if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
+     #   find_adapters(input_args, filenames, trimmed_path)
+      #  lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
 
     filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
     filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")
@@ -411,11 +412,11 @@ def main(input_args, filenames):
         if lib.file_exists(filenames.nanopore_corr, "Long reads already trimmed and corrected! Skipping...", "") == False:
             long_read_trim(input_args, filenames, trimmed_path)
 
-    filenames.fastqc_out = os.path.join(trimmed_path, filenames.trimmedf.split(".")[0]+"_fastqc.zip")
-    if lib.file_exists(filenames.fastqc_out, "", "") == False:
-        fastqc(input_args, filenames, trimmed_path)
+    #filenames.fastqc_out = os.path.join(trimmed_path, filenames.trimmedf.split(".")[0]+"_fastqc.zip")
+    #if lib.file_exists(filenames.fastqc_out, "", "") == False:
+     #   fastqc(input_args, filenames, trimmed_path)
 
-    if input_args.kraken2_db is not None:
+    if input_args.kraken2 is True:
 
         tax_filter_text = "  _____________________\n___/ Taxonomic Filtering \______________________________________________________"
         lib.print_t(tax_filter_text)

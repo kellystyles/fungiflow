@@ -24,8 +24,9 @@ def itsx(input_args,filenames,itsx_path):
     stdout = os.path.join(itsx_path,f"{input_args.array}.out")
     stderr = os.path.join(itsx_path,f"{input_args.array}.err")
 
-    cmd = ["ITSx","-i",filenames.assembly_fasta,"-o",os.path.join(itsx_path,input_args.array),"-t","F","--nhmmer","T","--cpu",input_args.cpus,"--preserve","--only_full","T","--temp",itsx_path]
+    cmd = ["ITSx","-i",filenames.assembly_fasta,"-o",os.path.join(itsx_path,input_args.array),"-t","F","--cpu",input_args.cpus,"--preserve","--only_full","T","--temp",itsx_path]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    if len(input_args.nanopore) > 0: cmd = cmd + ["--nhmmer", "T"]
     try:
         lib.print_n("Extracting the ITS sequence with ITSx")
         lib.execute(cmd,stdout,stderr)
@@ -174,7 +175,7 @@ def get_location(location):
     Input: JSON object location record
     Output: location coordinates
     """
-    loc_ = location.split(":")
+    loc_ = location.replace("<", "").split(":")
     # adds 1 to the starting base value to be inclusive of that base
     return int(loc_[0].lstrip("[")), int(loc_[1].rstrip("]"))
 
@@ -189,7 +190,7 @@ def plot_violin(dataframe, input_args, results_path):
     ax.get_figure().savefig(os.path.join(results_path,f"{input_args.array}_bgctype_vs_bgclength.svg"))
     plt.clf()
 
-def plot_swarm(dataframe, input_args, results_path):
+def plot_strip(dataframe, input_args, results_path):
     """
     Plots some figures summarizing the BGC information from parsed antiSMASH
     data using the seaborn package and save it as an SVG file:
@@ -210,7 +211,7 @@ def plot_swarm(dataframe, input_args, results_path):
             flag = True
         ax.text(x=dataframe.BGC_length[line], y=offset, s=str(dataframe.kc_desc[line].split("/")[0]), \
                 horizontalalignment=align, color='black', rotation=45, \
-                fontsize=8, rotation_mode="anchor")
+                yourfontsize=8, rotation_mode="anchor")
     ax.get_figure().savefig(os.path.join(results_path,f"{input_args.array}_contigedge_vs_bgclength_kc.svg"))
     plt.clf()
 
@@ -346,7 +347,7 @@ def parse_antismash(input_args, filenames):
         return flat_df
 
     except KeyError:
-        print("No BGCs. Skipping BGC plots.")
+        print("No BGCs.")
 
 def main(input_args,filenames):
 
@@ -438,11 +439,14 @@ def main(input_args,filenames):
             print(bgc_df)
             try:
                 final_df = final_df.merge(bgc_df, on="ID")
-            except TypeError:
-                print("No BGCs identified. Continuing...")
-            if lib.file_exists(filenames.antismash_svg, f"BGC plots already exist", f"Plotting BGC results for {input_args.array}") is False and len(bgc_df) > 1:
-                plot_swarm(bgc_df, input_args, results_path)
+                final_df.drop(columns=["ID"])
+                plot_strip(bgc_df, input_args, results_path)
                 plot_violin(bgc_df, input_args, results_path)
+            except TypeError:
+                print("No BGCs identified. Skipping BGC plots...")
+            except KeyError:
+                print()
+
 
     else:
         lib.print_n("Skipping BGC search with antiSMASH. Use '--antismash' as a script argument if you would like to do this.")

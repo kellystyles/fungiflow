@@ -1,40 +1,46 @@
 Bootstrap: docker
 From: nextgenusfs/funannotate
 
+%files
+    /home/kelly/Downloads/gmes_linux_64_4.tar.gz
+    /home/kelly/Downloads/gm_key_64.gz
+
 %post
     cat /etc/apt/sources.list
     sed -i 's/$/ universe/' /etc/apt/sources.list
     export LC_ALL=C
     export LANG=C
     apt update && apt install -y perl make cpanminus gcc dialog wget python3 libconfig-yaml-perl
-    python3 -m ensurepip --upgrade    
+    python3 -m ensurepip --upgrade
+
     # Perl modules installation
-    cpanm threads YAML Hash::Merge Logger::Simple Parallel::ForkManager MCE::Mutex Thread::Queue Getopt::Std
+    cpanm YAML Hash::Merge Logger::Simple Parallel::ForkManager
 
     # GeneMark install
-    wget -O gmes_linux_64.tar.gz http://bashupload.com/-vspy/Ej-wb.gz
-    tar -xvzf gmes_linux_64.tar.gz -C /usr/bin/
-    mv /usr/bin/gmes_linux_64_4/ /usr/bin/gmes_linux_64/
-    export GENEMARK_PATH="/usr/bin/gmes_linux_64/" >> ~/.bashrc
-    rm *.gz
-    mkdir /usr/bin/gmes_linux_64/GeneMark-E-tests/EP/test && cd /usr/bin/gmes_linux_64/GeneMark-E-tests/EP/test
+    tar -xvzf /home/kelly/Downloads/gmes_linux_64_4.tar.gz -C /venv/bin/
+    mv /venv/bin/gmes_linux_64_4/ /venv/bin/gmes_linux_64/
+    export GENEMARK_PATH="/venv/bin/gmes_linux_64/" >> ~/.bashrc
+    export PATH="/venv/bin/gmes_linux_64/":$PATH >> ~/.bashrc
+    gunzip -c /home/kelly/Downloads/gm_key_64.gz > ~/.gm_key
+    cd /venv/bin/gmes_linux_64/
+    ./change_path_in_perl_scripts.pl /venv/bin/perl
+    mkdir GeneMark-E-tests/EP/test && cd GeneMark-E-tests/EP/test
     ../../../gmes_petap.pl --seq ../input/genome.fasta --EP --dbep ../input/proteins.fasta --verbose --cores=8 --max_intergenic 10000 --mask_penalty 0
-    
-    # InterProScan install
-    wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.59-91.0/interproscan-5.59-91.0-64-bit.tar.gz
-    wget https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.59-91.0/interproscan-5.59-91.0-64-bit.tar.gz.md5
-    md5sum -c interproscan-5.59-91.0-64-bit.tar.gz.md5
-    tar -pxvzf interproscan-5.59-91.0-64-bit.tar.gz
-    python3 setup.py interproscan.properties
+    cd .. && rm -r test
 
     # EggNOG-mapper install
     pip3 install eggnog-mapper
-    
+
+%environment
+    export PATH="/venv/bin/gmes_linux_64/":$PATH >> ~/.bashrc
+    export GENEMARK_PATH="/venv/bin/gmes_linux_64/" >> ~/.bashrc
+
 %test
+    export GENEMARK_PATH="/venv/bin/gmes_linux_64/"
     echo "Software versions:"
     funannotate --version
-    gmes_petap.pl --version
-    emapper.py --version
+    gmes_petap.pl --versio
+    emapper.py --versio
 
 %help
-Built from Docker Hub nextgenusfs/funannotate
+    Built from Docker Hub nextgenusfs/funannotate
