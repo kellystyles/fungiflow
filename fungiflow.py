@@ -60,7 +60,7 @@ def get_args():
         parser.add_argument('-bdb', '--blob_db', action='store', 
                             help='Path to alternative NCBI-nt database for blobtools.', type=str)
         parser.add_argument('-edb', '--eggnog_db', action='store', 
-                            help='Path to alternative eggnog database for blobtools.', type=str)
+                            help='Path to alternative eggnog database for eggnog.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
                             help='Path to MinION reads.', type=str, required=False)
         parser.add_argument('-t', '--type', action='store', default="isolate", 
@@ -125,6 +125,27 @@ def main():
     filenames.printer()
     print("\n")
     lib.print_tu(f"⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished in {datetime.datetime.now() - start_time} ⁂⁂⁂⁂⁂⁂⁂⁂")
+
+
+    # TEST CODE FOR GENERATING WORKFLOW DESCRIPTION
+    if input_args.print_workflow is True:
+        if input_args.kraken2 is True: kraken = " and non-fungal reads removed using kraken2" else: kraken = ""
+        trimming = f"Short sequence reads were trimmed with Trimmomatic{kraken}."
+        if input.args.nanopore is None: 
+            trimming + f"MinION reads were trimmed with porechop and length-filtered to {input_args.minimum_length} bp with bbduk.sh before being converted to FASTA format. Short reads were mapped to these reads and corrected using ropebwt2 and FMLRC."
+            assembly_proc = "Corrected long reads were assembled with Flye"
+        else:
+            if input_args.careful is True: parameters = " with the \'careful\' parameter" else: parameters = ""
+            assembly_proc = f"Reads were assembled with SPADes{parameters}."
+        annotation = f"Annotation was performed using the Funannotate pipeline, using {input_args.min_training_models} for GeneMark."
+        if input_args.eggnog is True:
+            if input_args.interproscan is True: iprscan = " and InterProScan"
+            annotation = annotation + f"Functional annotation was performed using Eggnog{iprscan}."
+        post = "Assemblies were evaluated with Quast."
+        if input_args.its is True: post = post + "ITS regions were extracted using ITSx."
+        if input_args.antismash is True: post = post + "BGCs were predicted using antiSMASH."
+        if input_args.blobplot is True: post = post + "Blobplots were prepared using blobtools."
+        print(f"{trimming} {assembly_proc} {annotation} {post}")
 
 if __name__ == '__main__':
     main()

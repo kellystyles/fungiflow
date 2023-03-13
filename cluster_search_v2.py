@@ -2,6 +2,7 @@ import os
 import argparse
 import subprocess
 import sys
+import pyhmmer
 import multiprocessing
 import ast
 import pandas as pd
@@ -35,6 +36,8 @@ def get_args():
                         help='genbank file(s)', required=True)
     parser.add_argument('-p', '--phmm_dir', action='store',
                         help='directory with pHMMs', required=True)
+    parser.add_argument('-a', '--alignment', action='store',
+                        help='Multiple sequence alignment to build pHMM from', required=False)
     parser.add_argument('-r', '--required', action='store',
                         help='pHMMs required to be in the cluster')
 
@@ -81,35 +84,123 @@ def get_cds(gbk, out_filename):
                             continue
     return out_filename
 
-def make_blastdb(infile):
+def build_hmm(msa, output_file):
     """
-    Create a BLAST database from a multi-FASTA protein sequence file
+    Builds a binary HMM 'h3m' file using pyhmmer from an alignment file
     """
-    db_name = infile.rsplit(".", 1)[0].split("/")[1]
-    if os.path.exists("blast_db") == False:
-        os.mkdir("blast_db")
+    alphabet = pyhmmer.easel.Alphabet.amino()
+    builder = pyhmmer.plan7.Builder(alphabet)
+    background = pyhmmer.plan7.Background(alphabet)
     
-    if not os.path.isfile(f"blast_db/{db_name}.pin"):
-        cmd = f"makeblastdb -in {infile} -input_type fasta -dbtype prot -out blast_db/{db_name}"
-        subprocess.run([cmd], shell=True)
-    return f"blast_db/{db_name}"
+    with pyhmmer.easel.MSAFile(msa, digital=True, alphabet=alphabet) as msa_file:
+        msa_d = msa_file.read()
+    prefix = msa.split(".")[0]
+    msa_d.name = prefix.encode()
+    hmm, _, _ = builder.build_msa(msa_d, background)
 
-def blastp(query, db, out_filename):
-    """
-    Run BLASTp on a protein sequence file against a BLAST database
-    """
-    if not os.path.isfile(out_filename):
-        cmd = f"blastp -query {query} -db {db} -outfmt \"6 std\" -out {out_filename}"
-        subprocess.run([cmd], shell=True)
-    return out_filename
+    with open(output_file, "wb") as f:
+        print(f"Writing HMM to {output_file}")
+        hmm.write(f)
+    
+    return msa_d
 
-def hmmsearch(hmm, fasta, out_filename):
-    """
-    Run HMMsearch on a HMM file against a multi-FASTA protein sequence database
-    """
-    if os.path.isfile(out_filename) is False:
-        cmd = ["hmmsearch", "-E", "1e-5", "--noali", "--notextw", "--cpu","4", "-o", out_filename, hmm, fasta]
-        subprocess.run(cmd)
+def read_hmm(h3m_file):
+    with pyhmmer.HMMFile(h3m_file) as hmm_file:
+        hmms = list(hmm_file)
+    
+def multi_hmmsearch(hmm_list, fasta):
+    from typing import Iterable
+    from pyhmmer.plan7 import HMMFile
+    from pyhmmer.easel import Bitfield, TextSequence
+    from pyhmmer.hmmer import hmmsearch
+    import collections
+
+    alphabet = pyhmmer.easel.Alphabet.amino()
+
+    with pyhmmer.easel.SequenceFile(fasta, digital=True) as seqs_file:
+        proteins = seqs_file.read_block()
+    print(f"Loaded {len(proteins)} protein CDS from {fasta}")
+        
+    loaded = []
+    for f in hmm_list:
+        with pyhmmer.plan7.HMMFile(f) as hmm_file:
+            hmm = hmm_file.read()
+            loaded.append(hmm)
+        
+    Result = collections.namedtuple("Result", ["query", "hmm", "bitscore"])
+    results = []
+    for hits in pyhmmer.hmmsearch(loaded, proteins):
+        hmm = hits.query_name.decode()
+        for hit in hits:
+            if hit.included:
+                results.append(Result(hit.name.decode(), hmm, hit.score))
+                #print(results)
+    
+    return results
+
+def trusted_hmmsearch(hmms, fasta, trusted_cutoff_file):
+    from typing import Iterable
+    from pyhmmer.plan7 import HMMFile
+    from pyhmmer.easel import Bitfield, TextSequence
+    from pyhmmer.hmmer import hmmsearch
+    import collections
+
+    alphabet = pyhmmer.easel.Alphabet.amino()
+
+    cutoffs = {}
+    with open(trusted_cutoff_file, "r") as tc_file:
+        for line in tc_file:
+            line = line.split()
+            cutoffs[line[0]] = float(line[1])
+    
+    with pyhmmer.easel.SequenceFile(fasta, digital=True) as seqs_file:
+        proteins = seqs_file.read_block()
+    print(f"Loaded {len(proteins)} protein CDS from {fasta}")
+    
+    loaded = []
+    for f in hmms:
+        with pyhmmer.plan7.HMMFile(f) as hmm_file:
+            hmm = hmm_file.read()   
+        cutoff = cutoffs[hmm.name.decode()]    
+        hmm.cutoffs.trusted = (cutoff, cutoff)
+        loaded.append(hmm)
+    
+    Result = collections.namedtuple("Result", ["query", "hmm", "bitscore"])
+    results = []
+    for hits in pyhmmer.hmmsearch(loaded, proteins, bit_cutoffs="trusted"):
+        hmm = hits.query_name.decode()
+        for hit in hits:
+            print(hit)
+            if hit.included:
+                results.append(Result(hit.name.decode(), hmm, hit.score))
+    print(results)
+    
+    return results
+
+def filter_hits(results, required):
+    best_results = {}
+    keep_query = set()
+    for result in results:
+        if result.query in best_results:
+            previous_bitscore = best_results[result.query].bitscore
+            if result.bitscore > previous_bitscore:
+                best_results[result.query] = result
+                keep_query.add(result.query)
+            elif result.bitscore == previous_bitscore:
+                if best_results[result.query].cog != hit.cog:
+                    keep_query.remove(result.query)
+        else:
+            best_results[result.query] = result
+            keep_query.add(result.query)
+    hmm_hits = []
+    for i in best_results:
+        hmm_hits.append(best_results[i][1])
+    if all(elem in hmm_hits for elem in required):
+        for i in best_results:
+            print(best_results[i][0], best_results[i][1], "{:.1f}".format(best_results[i][2]), sep="\t")
+        return best_results
+    else:
+        print("Not all elements of the list are in the set.")
 
 def parse_gbk(infile, parsed_df):
     """
@@ -173,18 +264,18 @@ def parse_gbk(infile, parsed_df):
         
     return parsed_df
 
-def update_cluster(cluster, sorted_df):
+def update_cluster(cluster, best_results):
     """
-    Adds predicted protein name to cluster Genabnk files as 'product'
+    Adds predicted protein name to cluster Genbank files as 'product'
     """
-    locus_tags = sorted_df["Locus_tag"].to_list()
+
     with open(cluster, "r") as handle:
         records = []
         for record in SeqIO.parse(handle, "genbank"):
             for feat in record.features:
                 if feat.type == "CDS":
                     if feat.qualifiers["locus_tag"][0] in locus_tags:
-                        feat.qualifiers['product'] = sorted_df.at[sorted_df[sorted_df['Locus_tag'] == feat.qualifiers['locus_tag'][0]].index[0], 'phmm']
+                        feat.qualifiers['product'] = best_results[feat.qualifiers["locus_tag"][0]][1]
                         # Append the record to the list
                         records.append(record)
     SeqIO.write(records, cluster, "genbank") 
@@ -251,109 +342,45 @@ def calc_trusted_cutoffs(list_phmms, phmm_dir):
     """
     
     trusted_cutoffs = {}
-#    files = os.listdir(list_phmms)
     output_file = "trusted_cutoffs.txt"
-    #print(list_phmms)
     if os.path.isfile(output_file) is False or os.stat(output_file).st_size == 0:
-        for file in list_phmms:
-            #print(file)
-            results = pd.DataFrame()
-            clean_coll = []
-            prefix = file.split(".")[0]
-            fasta_file = os.path.join("hmms", f"{prefix}.fasta")
-            results_file = os.path.join("hmms", f"{prefix}.txt")
-
-            # hmmsearch the input pHMM file against the input FASTA file
-            hmmsearch(os.path.join(phmm_dir, file), fasta_file, results_file)
-            # read the output file from above and obtain hit lines
-            forbidden = ['!', '?', '*', 'PP']
-            with open(results_file, 'r') as read_obj:
-                for line in read_obj:
-                    cleaned = line.strip()
-                    if cleaned.startswith(tuple('0123456789')) and all(forbidden_char not in cleaned for forbidden_char in forbidden):
-                        clean_coll.append(cleaned.split(maxsplit=9)[:9])
-                
-            # add data to pandas dataframe
-            results = pd.DataFrame(clean_coll)
-            results.columns = ['seq_E-value', 'seq_score', 'seq_bias', 'dom_E-value', 'dom_score', 'dom_bias', 'exp', 'N', 'Accession']   
-                
-            seq_min = float(results.seq_score.min())
-            dom_min = float(results.dom_score.min())
+        for hmm in list_phmms:
+            prefix = hmm.split(".")[0]
+            fasta_file = f"{prefix}.prots.fasta"
+            results = multi_hmmsearch([hmm], fasta_file)                
+            smallest_bitscore = min(results, key=lambda x: x.bitscore)
+            print(smallest_bitscore[2])
                 
             # calculate trusted cutoffs
             if len(results) >= 5:
                 c = 0.2
             else:
                 c = 0.5
-            seq_TC = seq_min - (c * seq_min)
-            dom_TC = dom_min - (c * dom_min)
-                
+            TC = smallest_bitscore[2] - (c * smallest_bitscore[2])
+            print(TC)
             # write trusted cutoffs to dict and to file
-            trusted_cutoffs[prefix]={'Name':prefix,'seq_TC':round(seq_TC, 2),'dom_TC':round(dom_TC, 2)}
-            with open("trusted_cutoffs.txt", "w") as tc:
-                tc.write(str(trusted_cutoffs))
+            with open("trusted_cutoffs.txt", "a") as tc:
+                tc.write(f"{prefix}\t{TC}\n")
 
     # will reuse existing trusted cutoff results file if it exists
     else:
         trusted_cutoffs = {}
         with open("trusted_cutoffs.txt", "r") as f:
             f_in = f.read()
-            trusted_cutoffs = ast.literal_eval(f_in)
+            fs = f_in.split()
+            for hmm in list_phmms:
+                trusted_cutoffs["hmm"] = fs[0]
+                trusted_cutoffs["TC"] = fs[1]
+        print(trusted_cutoffs)
 
     if len(trusted_cutoffs) != len(list_phmms):
-        #print("Not all trusted cutoffs could be calculated for your pHMMs. Please check your inputs\n")
+        print("Not all trusted cutoffs could be calculated for your pHMMs. Please check your inputs\n")
         exit(1)
 
     return trusted_cutoffs
 
-def search_output(search_results, gbk_file, phmm, seq_TC, dom_TC):
-    """
-    Filters out hits below the trusted cutoff bitscores, then outputs results to a dictionary.
-    
-    Parameters:
-        search_results (str): HMMSEARCH output file.
-        seq_TC (float): Trusted cutoff bitscore for sequence.
-        dom_TC (float): Trusted cutoff bitscore for domain.
-    
-    Returns:
-        parsed (dict): A nested dictionary with hit information, bitscores, and e-values for sequence and domain hits.
-    """
-    df = pd.DataFrame()
-    clean_coll = []
-    multiplier = 0.5
-
-    # Read in input file and obtain hit lines.
-    with open(search_results, 'r') as read_obj:
-        for line in read_obj:
-            cleaned = line.strip()
-            if (
-                cleaned.startswith(tuple('0123456789'))
-                and ('!' not in cleaned)
-                and ('?' not in cleaned)
-                and ('*' not in cleaned)
-                and ('PP' not in cleaned)
-            ):
-                clean_coll.append(cleaned.split(maxsplit=9)[:9])
-            elif cleaned == "[No hits detected that satisfy reporting thresholds]":
-                hmm = str(search_results).split("_")[0]
-                #print(f"No hits detected that satisfy reporting thresholds were detected for {hmm}")
-    try:
-        df = pd.DataFrame(clean_coll)
-        df.columns = ['seq_E-value', 'seq_score', 'seq_bias', 'dom_E-value', 'dom_score', 'dom_bias', 'exp', 'N', 'Accession']
-        df["input"] = gbk_file
-        df["phmm"] = phmm.split(".")[0]
-
-        # Filter out hits that have lower sequence and domain bitscores than the TCs.
-        df = df[df['seq_score'].astype(float) >= seq_TC * multiplier]
-        df = df[df['dom_score'].astype(float) >= dom_TC * multiplier]
-        #print(df)
-    except ValueError:
-        #print(f"No hits for {phmm} in {gbk_file}")
-        pass
-    if len(df) > 0:
-        return df
-
-def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
+##def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
+def search_gbk(i, gbk_file, phmms, required):
     """
     Overarching function that executes all the functions required to extract clusters
     from a GBK file using the input pHMM files.
@@ -372,46 +399,20 @@ def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
             df = pd.read_csv(gbk_results_file, sep='\t')
         else:
             # loop through each pHMM and search against GBK CDS
+            hits = trusted_hmmsearch(phmms, cds_outfile, "trusted_cutoffs.txt")
+            filtered_hits = filter_hits(hits, input_args.required)
             # then builds up contextual information for the hits from the GBK
-            # writes df to a TSV data file
-            new_df = pd.DataFrame()
-            for phmm in hmm_list:
-                hmm_prefix = phmm.split(".")[0]
-                search_outfile = os.path.join("hmm_output", f"{hmm_prefix}_{gbk_prefix}.txt")
-                if os.path.isfile(search_outfile) is False:
-                    hmmsearch(os.path.join(phmm_dir, phmm), cds_outfile, search_outfile)
-                parsed = search_output(search_outfile, gbk_file, phmm, TC[hmm_prefix]['seq_TC'], TC[hmm_prefix]['dom_TC'])
-                if parsed is not None:
-                    parse_gbk(gbk_file, parsed)
-                    new_df = pd.concat([new_df, parsed])
-            if len(new_df) > 0:
-                new_df.to_csv(gbk_results_file, index=False, sep="\t")
-                df = pd.read_csv(gbk_results_file, sep='\t')
-            else:
-                #print(f"\tNo pHMM hits in {gbk_file}")
-                return
+
+            if len(filtered_hits) > 0:
+                with open(gbk_results_file, "w") as f:
+                    f.write(filtered_hits)
+
     except pd.errors.EmptyDataError:
         print(f"{gbk_results_file} is empty")
         return 
-    # prepares a new df containing rows with max scores for each pHMM
-    #print(df)
-    if df["seq_score"].dtypes != 'float64':
-        df["seq_score"] = pd.to_numeric(df["seq_score"], errors='coerce')
-    sorted_df = df.loc[df.groupby("phmm")["seq_score"].idxmax()]
 
-    # extracts each locus_tag and its context from GBK infile  
-    # writes data to a cluster GBK file
-    phmm_vals = sorted_df["phmm"].values.tolist()
-    phmm_vals_stripped = [os.path.splitext(x)[0] for x in phmm_vals]
-    locus_tags = sorted_df["Locus_tag"].values.tolist()
-    if required is not None:
-        #print(phmm_vals_stripped, required)
-        result = all(x in phmm_vals_stripped for x in required)
-    else:
-        result = True
-
-    if result == True:
-        print(locus_tags)
+    if len(filtered_hits) > 0:
+        locus_tags = df["query"].values.tolist()
         get_range(gbk_file, locus_tags)
     else:
         #print(f"\tNo clusters in {gbk_file}")
@@ -423,7 +424,7 @@ def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
     for cluster in clusters:
         if cluster.split("_")[1] == gbk_prefix:
             #print(f"\tupdating cluster {cluster}")
-            update_cluster(os.path.join("clusters", cluster), sorted_df)
+            update_cluster(os.path.join("clusters", cluster), df)
             n += 1
 
 def multiprocess_function(function, directory, var1, var2, var3, var4):
@@ -467,17 +468,24 @@ def main():
         required_stripped = [os.path.splitext(x)[0] for x in required]
     except Exception:
         required_stripped = None
-    phmms = [f for f in os.listdir(phmm_dir) if f.endswith('.hmm')]
+
+    if args.alignment is True:
+        msas = [f for f in os.listdir(phmm_dir) if f.endswith('.aln')]
+        for msa in msas:
+            phmm_out = os.path.join(phmm_dir, f"{msa.split(".")[0]}.h3m")
+            build_hmm(os.path.join(phmm_dir, msa), phmm_out)
+
+    phmms = [f for f in os.listdir(phmm_dir) if f.endswith('.hmm') or f.endswith('.h3m')]
     #print(phmms)
     ##gbks = [f for f in os.listdir(gbk_dir) if f.endswith(('.gb', '.gbk'))]
 
     # calculate the trusted cutoff values for each pHMM
-    trusted_cutoffs = calc_trusted_cutoffs(phmms, phmm_dir)
+    ##trusted_cutoffs = calc_trusted_cutoffs(phmms, phmm_dir)
 
     if os.path.exists("hmm_output") is False:
         os.makedirs("hmm_output", exist_ok=True)
     ##for gbk in gbks:
-    multiprocess_function(search_gbk, gbk_dir, phmms, phmm_dir, trusted_cutoffs, required_stripped)
+    multiprocess_function(search_gbk, gbk_dir, phmms, required_stripped) ## phmm_dir, trusted_cutoffs, 
 
     clusters = os.listdir("clusters")
     # Reports the number of clusters extracted

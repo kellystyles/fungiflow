@@ -302,10 +302,10 @@ def polypolish(input_args, filenames, assembly_path):
     """
     stdout = os.path.join(assembly_path, f"{input_args.array}_polypolish.out")
     stderr = os.path.join(assembly_path, f"{input_args.array}_polypolish.err")
-    cmd = ["polypolish", filenames.medaka_consensus, filenames.medaka_sorted_sam, ">", filenames.polypolish_consensus]
-    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    cmd = f"polypolish {filenames.medaka_consensus} {filenames.medaka_sorted_sam} > {filenames.polypolish_consensus}"
+    if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
 
-    lib.execute(cmd, stdout, stderr)
+    lib.execute_shell([cmd], stdout, stderr)
     lib.file_exists(filenames.polypolish_consensus, \
         f"Polishing {filenames.medaka_consensus} with polypolish was successful", f"Polishing {filenames.medaka_consensus} with polypolish failed")    
 

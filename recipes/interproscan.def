@@ -1,0 +1,79 @@
+Bootstrap: debootstrap
+OSVersion: bionic
+MirrorURL: http://us.archive.ubuntu.com/ubuntu/
+
+%labels
+    Author: Kelly Styles
+    Version: 0.1
+    Contact: kellystyles0@gmail.com
+
+%files
+    /home/kelly/Desktop/Singularity/files/interproscan-5.60-92.0-64-bit.tar.gz /interproscan-5.60-92.0-64-bit.tar.gz
+    /home/kelly/Desktop/Singularity/files/interproscan-5.60-92.0-64-bit.tar.gz.md5 /interproscan-5.60-92.0-64-bit.tar.gz.md5
+    #/home/kelly/Desktop/Singularity/files/pftools3-3.2.12.zip /pftools3-3.2.12.zip   
+
+%post
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+
+	apt-get update
+	apt-get -y install \
+    build-essential manpages-dev apt-utils locales wget default-jre gfortran unzip \
+    libboost-all-dev perl wget python3 zlib1g-dev openjdk-11-jdk openjdk-11-jre
+    apt-get clean
+
+    # Installing Prosite Software
+    git clone https://github.com/sib-swiss/pftools3.git
+    cd pftools3
+    mkdir build/
+    cd build
+    cmake -DUSE_AFFINITY=OFF -DUSE_PCRE2=OFF -DUSE_PCRE=ON ..
+    make
+    make install
+    make test
+    cd /
+    # OR install from zip - check zip present in %files
+    #unzip /pftools3-3.2.12.zip
+    #rm /pftools3-3.2.12.zip
+    #cd pftools3-3.2.12/
+
+    # Installing InterProScan
+    md5sum -c /interproscan-5.60-92.0-64-bit.tar.gz.md5
+    tar -pxvzf /interproscan-5.60-92.0-64-bit.tar.gz -O /interproscan-5.60-92.0
+    rm /interproscan-5.60-92.0-64-bit.tar.gz
+    cd interproscan-5.60-92.0/
+    python3 setup.py interproscan.properties
+    export PATH="$PATH":/interproscan-5.60-92.0/
+
+%environment
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH="$PATH":/interproscan-5.60-92.0/
+
+%test
+    export LC_ALL=C.UTF-8
+    export LANG=C.UTF-8
+    export PATH="$PATH":/interproscan-5.60-92.0/
+    python3 --version
+    perl -version
+    java -version
+    interproscan.sh --version
+    printf "\n### All software installed :) ###\n"
+    
+    # Testing interproscan
+    ./interproscan.sh -i test_all_appl.fasta -f tsv -dp
+
+%help
+       _______
+    __/ About \___________________________________________________
+    This is the InterProScan container of the Fungiflow pipeline.
+                _______
+    ___________/ Usage \__________________________________________
+    To run the Fungiflow pipeline, please refer to the main script;
+        `fungiflow.py --help`.
+
+    If you'd like, add this container to your PATH using:
+        `export "PATH=/path/to/fungiflow_v0.1.def:$PATH"`
+      

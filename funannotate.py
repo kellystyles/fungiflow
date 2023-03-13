@@ -134,7 +134,7 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     # If there is sufficient memory, load the entire diamond DB into memory
     if int(input_args.mem) > 45: cmd = cmd + ["--dbmem"]
-    # If a hits file from a previosu run is present, resume the run
+    # If a hits file from a previous run is present, resume the run
     if os.path.isfile(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits")) is True: cmd = cmd + ["--resume"]
     try:
         lib.execute(cmd,stdout,stderr)
@@ -179,7 +179,12 @@ def funannotate_annotate(input_args,filenames,funannotate_path):
     lib.print_n("Annotating CDS with funannotate annotate")
     cmd = ["funannotate","annotate","-i",os.path.join(funannotate_path,"predict_results"), \
         "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus]
-    if lib.file_exists(filenames.eggnog_annotations,"","") is True: cmd = cmd + ["--eggnog",filenames.eggnog_annotations]
+    if lib.file_exists(filenames.eggnog_annotations,"","") is True: 
+        cmd = cmd + ["--eggnog",filenames.eggnog_annotations]
+        try:
+            os.remove(funannotate_path, "annotate_misc", "eggnog.emapper.annotations")
+        except FileNotFoundError:
+            pass
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
@@ -211,7 +216,7 @@ def main(input_args,filenames):
     filenames.funannotate_gff = os.path.join(funannotate_path,"predict_results",f"{input_args.array}.gff3")
     filenames.funannotate_prots = os.path.join(funannotate_path,"predict_results",f"{input_args.array}.proteins.fa")
     filenames.eggnog_annotations = os.path.join(eggnog_path,f"{input_args.array}.emapper.annotations")
-    filenames.eggnog_annotations = os.path.join(iprscan_path,f"{input_args.array}.xml")
+    filenames.ipr_annotations = os.path.join(iprscan_path,f"{input_args.array}.xml")
     filenames.funannotate_func_gbk = os.path.join(funannotate_path,"annotate_results",f"{input_args.array}.gbk")
 
     if lib.file_exists(filenames.funannotate_clean_fasta,"Assembly already cleaned by Funannotate! Skipping...","") is False:

@@ -66,7 +66,7 @@ def parse_blast(results_path,array):
     columns = ["Query","Species","Accession","Identity","Bitscore","E-value","Subject Name"]
 
     if os.path.exists(results_path):
-        lib.print_n(f"Parsing BLASTp results for {results_path}")
+        lib.print_n(f"Parsing BLAST results for {results_path}")
         try:
             dataframe = pd.read_csv(results_path, sep="\t", header=None)
             dataframe.columns = columns
@@ -75,7 +75,7 @@ def parse_blast(results_path,array):
             print(dataframe)
             return dataframe
         except pd.errors.EmptyDataError:
-            print(f"No BLASTp results obtained for {results_path}")
+            print(f"No BLAST results obtained for {results_path}")
     else:
         print(f"The BLAST for {results_path} was not completed successfully")
         
@@ -175,7 +175,7 @@ def get_location(location):
     Input: JSON object location record
     Output: location coordinates
     """
-    loc_ = location.replace("<", "").split(":")
+    loc_ = location.replace("<", "").replace(">", "").split(":")
     # adds 1 to the starting base value to be inclusive of that base
     return int(loc_[0].lstrip("[")), int(loc_[1].rstrip("]"))
 
@@ -292,20 +292,18 @@ def parse_json(json_object,json_file):
     # code to remove duplicate BGCs resulting from 'neighbouring' BGCs
     # makes a list of all 'neighbouring' clusters
     try:
-        x = array.index[array['kind'] == "neighbouring"].tolist()
-        for i in x:
-            n = x[0]
-            for j in range(len(array.loc[i]["BGC_type"])):
-                n += 1
-                og_left, og_right = array.loc[i]["BGC_location"].split(":")[0], array.loc[i]["BGC_location"].split(":")[1]
-                # checks if the BGCs are in the same contig
-                if array.loc[i]["contig"] == array.loc[n]["contig"]:
-                    # checks if the 'BGC_type' is in the 'neihgbouring' 'BGC_type' list
-                    if str(array.loc[n]["BGC_type"][0]) in array.loc[i]["BGC_type"]:
-                        # checks if the location is within the range of the original 'location'
-                        left, right = array.loc[n]["BGC_location"].split(":")[0], array.loc[n]["BGC_location"].split(":")[1]
-                        if left >= og_left and right <= og_right:
-                            array.drop([n], axis=0, inplace=True)
+        grouped = array.groupby('contig')
+        to_drop = []
+        for group in grouped:
+            single_locations = group[group['kind'] == 'single']['BGC_location'].tolist()
+            neighbouring_locations = group[group['kind'] == 'neighbouring']['BGC_location'].tolist()
+            for single in single_locations:
+                single_left, single_right = [int(x) for x in single.split(':')]
+                for neighbouring in neighbouring_locations:
+                    neighbouring_left, neighbouring_right = [int(x) for x in neighbouring.split(':')]
+                    if single_left >= neighbouring_left and single_right <= neighbouring_right:
+                        to_drop.extend(group[group['BGC_location'] == single].index)
+        array.drop(to_drop, inplace=True)
     except KeyError:
         pass
     
@@ -425,9 +423,18 @@ def main(input_args,filenames):
                 lib.print_n("Removing existing antiSMASH output directory")
                 shutil.rmtree(antismash_path)
             lib.make_path(antismash_path)
+            # Will preferentially use the functionally annotated GBK file
             if lib.file_exists(filenames.funannotate_func_gbk,f"Using {filenames.funannotate_func_gbk} as input for antiSMASH", \
                 f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
                 filenames.antismash_assembly = filenames.funannotate_func_gbk
+            # else will use the prediction GBK file
+            elif lib.file_exists(filenames.funannotate_gbk,f"Using {filenames.funannotate_gbk} as input for antiSMASH", \
+                f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                filenames.antismash_assembly = filenames.funannotate_gbk
+            # else will use the sorted assembly with nicer contig names if Funannotate has been run
+            elif lib.file_exists(filenames.funannotate_sort_fasta,f"Using {filenames.funannotate_sort_fasta} as input for antiSMASH", \
+                f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                filenames.antismash_assembly = filenames.funannotate_sort_fasta
             else:
                 filenames.antismash_assembly = filenames.assembly_fasta
             antismash(input_args,filenames,antismash_path)
@@ -445,9 +452,7 @@ def main(input_args,filenames):
             except TypeError:
                 print("No BGCs identified. Skipping BGC plots...")
             except KeyError:
-                print()
-
-
+                pass
     else:
         lib.print_n("Skipping BGC search with antiSMASH. Use '--antismash' as a script argument if you would like to do this.")
 

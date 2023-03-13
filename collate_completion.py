@@ -1,6 +1,7 @@
 #!/usr/bin/env/python
 import os
 import sys
+import re
 import pandas as pd
 
 """
@@ -13,7 +14,7 @@ Usage `python3 collate_completion.py target_directory`
 print(f"Target directory : {sys.argv[1:]}")
 
 target_dir = sys.argv[1:]
-output_csv = os.path.join(sys.argv[1:], "completion_state.csv")
+output_csv = os.path.join(target_dir, "completion_state.csv")
 
 # Get the list of all directories in the folder
 directories = [d for d in os.listdir(target_dir) if os.path.isdir(d)]
@@ -34,7 +35,7 @@ for directory in directories:
     funannotate_predict = os.path.exists(f'{directory}/funannotate/predict_results/{directory}.gbk') and os.stat(f'{directory}/funannotate/predict_results/{directory}.gbk').st_size > 0
     eggnog = os.path.exists(f'{directory}/funannotate/eggnog/{directory}.emapper.annotations') and os.stat(f'{directory}/funannotate/eggnog/{directory}.emapper.annotations').st_size > 0
     funannotate_annotate = os.path.exists(f'{directory}/funannotate/annotate_results/{directory}.gbk') and os.stat(f'{directory}/funannotate/annotate_results/{directory}.gbk').st_size > 0
-    ITSx = os.path.exists(f'{directory}/ITSx/*.fasta') and os.stat(f'{directory}/ITSx/*.fasta').st_size > 0
+    ITSx = os.path.exists(f"{directory}/ITSx/{directory}.summary.txt") and os.stat(f"{directory}/ITSx/{directory}.summary.txt").st_size > 0
     antismash = os.path.exists(f'{directory}/antismash/{directory}.json') and os.stat(f'{directory}/antismash/{directory}.json').st_size > 0
     quast = os.path.exists(f'{directory}/quast/report.pdf') and os.stat(f'{directory}/quast/report.pdf').st_size > 0
     dict = {'array':directory, 'trimmed':trimmed, 'kraken2':kraken2, 'assembly':assembly, 

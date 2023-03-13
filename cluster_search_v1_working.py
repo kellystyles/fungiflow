@@ -376,12 +376,16 @@ def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
             # writes df to a TSV data file
             new_df = pd.DataFrame()
             for phmm in hmm_list:
+                print(phmm)
                 hmm_prefix = phmm.split(".")[0]
                 search_outfile = os.path.join("hmm_output", f"{hmm_prefix}_{gbk_prefix}.txt")
                 if os.path.isfile(search_outfile) is False:
                     hmmsearch(os.path.join(phmm_dir, phmm), cds_outfile, search_outfile)
                 parsed = search_output(search_outfile, gbk_file, phmm, TC[hmm_prefix]['seq_TC'], TC[hmm_prefix]['dom_TC'])
+                
+                print(parsed)
                 if parsed is not None:
+                    print("LEn of parsed", len(parsed))
                     parse_gbk(gbk_file, parsed)
                     new_df = pd.concat([new_df, parsed])
             if len(new_df) > 0:
@@ -409,7 +413,7 @@ def search_gbk(i, gbk_file, hmm_list, phmm_dir, TC, required):
         result = all(x in phmm_vals_stripped for x in required)
     else:
         result = True
-
+    print(result)
     if result == True:
         print(locus_tags)
         get_range(gbk_file, locus_tags)
