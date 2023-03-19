@@ -6,6 +6,10 @@ import library as lib
 """
 Runs a basic set of modules from the Funannotate pipeline, as a module of the Fungiflow pipeline.
 
+    - regarding GeneMark-ES usage, it is not compulsory but does give good predictions.
+    If you wish to use this software, please obtain a license key and install it locally,
+    and supply the path to `gmes_petap.pl` using the Fungiflow command 
+
 An input assembly will be cleaned, sorted, softmasked, then gene conding regions will be predicted, 
 returning an output folder containing Funannotate outputs, inlcuding GBK, GFF3, an intermediate files.
 For further information about the Funannotate pipeline, please visit:
@@ -94,8 +98,10 @@ def funannotate_predict(input_args,filenames,funannotate_path):
     
     lib.print_n("Predicting genes with funannotate predict")
     cmd = ["funannotate","predict","-i",filenames.funannotate_mask_fasta, \
-        "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus,"--name",input_args.array,"--min_training_models",input_args.min_training_models]
+        "-o",funannotate_path,"-s",input_args.array,"--cpus",input_args.cpus, \
+            "--name",input_args.array,"--min_training_models",input_args.min_training_models]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
+    if input_args.genemark_path is not None: cmd = cmd + ["--GENEMARK_PATH", input_args.genemark_path]
     try:
         lib.execute(cmd,stdout,stderr)
         # If funannotate fails because GeneMark-ES doesn't have enough training models,
@@ -109,12 +115,13 @@ def funannotate_predict(input_args,filenames,funannotate_path):
                         os.path.join(funannotate_path,"predict_misc","genome.softmasked.fa"),"--fungus","--min_contig","2000", \
                             "--work_dir",os.path.join(funannotate_path,"predict_misc")]
                     if len(filenames.funannotate) > 0: gme_cmd = filenames.funannotate + gme_cmd
-                    lib.print_n("GeneMark ES could not predict genes from the assembly as it is too fragmented. Will try to optiize the parameters for low-coverage assembly...")
+                    lib.print_n("GeneMark ES could not predict genes from the assembly as it is too fragmented. Will try to optimize the parameters for low-coverage assembly...")
                     lib.execute(gme_cmd,stdout,stderr)
                     cmd = cmd + ["--genemark_gtf",os.path.join(funannotate_path,"predict_misc","genemark.gtf")]
                     lib.execute(cmd,stdout,stderr)
                 lib.file_exists(filenames.funannotate_gbk, \
-                    "Assembly genes successfully predicted with Funannotate predict","Funannotate predict failed... check the logs and your inputs\nYou could try using the `--careful` input parameter to prepare a better assembly. You may need to remove the existing `assembly` directory first.")
+                    "Assembly genes successfully predicted with Funannotate predict", \
+                        "Funannotate predict failed... check the logs and your inputs\nYou could try using the `--careful` input parameter to prepare a better assembly. You may need to remove the existing `assembly` directory first.")
 
     except subprocess.CalledProcessError as e:
         print(e.returncode)
@@ -123,6 +130,9 @@ def funannotate_predict(input_args,filenames,funannotate_path):
 def eggnog_annotate(input_args,filenames,eggnog_path):
     """
     Runs eggnog mapper to functionally annotate predicted protein sequences.
+
+    Input:      predicted proteins multi FASTA
+    Output:     eggnog annotations of proteins multi FASTA
     """
 
     stdout = os.path.join(eggnog_path,f"{input_args.array}_eggnog_annotate.out")
@@ -147,6 +157,7 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
 def interproscan(input_args,filenames,iprscan_path):
     """
     Runs InterProScan to functionally annotate the GFF file.
+
     Input: GFF3 file - output of funannotate predict
     Output: XML file with functional hits
     """
@@ -209,6 +220,8 @@ def main(input_args,filenames):
     lib.make_path(eggnog_path)
     lib.print_n("Changing into Funannotate directory")
     os.chdir(funannotate_path)
+
+    # Defining filenames
     filenames.funannotate_clean_fasta = os.path.join(funannotate_path,f"{input_args.array}_cleaned.fasta")
     filenames.funannotate_sort_fasta = os.path.join(funannotate_path,f"{input_args.array}_sorted.fasta")
     filenames.funannotate_mask_fasta = os.path.join(funannotate_path,f"{input_args.array}_masked.fasta")
@@ -219,6 +232,7 @@ def main(input_args,filenames):
     filenames.ipr_annotations = os.path.join(iprscan_path,f"{input_args.array}.xml")
     filenames.funannotate_func_gbk = os.path.join(funannotate_path,"annotate_results",f"{input_args.array}.gbk")
 
+    # Check if output file exists or not before running each command
     if lib.file_exists(filenames.funannotate_clean_fasta,"Assembly already cleaned by Funannotate! Skipping...","") is False:
         funannotate_clean(input_args,filenames)
     if lib.file_exists(filenames.funannotate_sort_fasta,"Assembly already sorted by Funannotate! Skipping...","") is False:

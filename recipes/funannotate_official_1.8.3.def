@@ -39,8 +39,8 @@ From: nextgenusfs/funannotate
     export GENEMARK_PATH="/venv/bin/gmes_linux_64/"
     echo "Software versions:"
     funannotate --version
-    gmes_petap.pl --versio
-    emapper.py --versio
+    gmes_petap.pl --version
+    emapper.py --version
 
 %help
     Built from Docker Hub nextgenusfs/funannotate

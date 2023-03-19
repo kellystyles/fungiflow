@@ -7,9 +7,9 @@ import multiprocessing
 import collections
 from Bio import SeqIO
 
-version = 1
+version = 3
 f"""
-                    |-|-|-|- Cluster Search v1 -|-|-|-|
+                    |-|-|-|- Cluster Search v{version} -|-|-|-|
 
 This script will pull out sequence data containing hits to input pHMM models 
 from a GBK file.  
@@ -173,6 +173,7 @@ def trusted_hmmsearch(hmms, fasta, trusted_cutoff_file):
     with open(trusted_cutoff_file, "r") as tc_file:
         for line in tc_file:
             line = line.split()
+            print(line)
             cutoffs[line[0]] = float(line[1])
     
     # load protein sequences
@@ -264,9 +265,6 @@ def get_range(infile, recs, lt):
     and extracts 10 kb on either side of this range, outputting as a Genbank file
     This function has been adapted from "https://www.biostars.org/p/340270/" by user Joe.
     """ 
-
-    if not os.path.exists("clusters"):
-        os.mkdir("clusters")
 
     file = str(infile.rsplit("/")[1].rsplit(".")[0])
     #print(file)
@@ -444,6 +442,7 @@ def search_gbk(i, gbk_file, phmms, required, phmm_dir):
         recs = open_gbk(gbk_file)
         # filter hits
         filtered_hits = filter_hits(hits, gbk_results_file, required)
+        print(filtered_hits)
         if filtered_hits is not None:
             locus_tags = [filtered_hits[i][0] for i in filtered_hits]
             if len(locus_tags) > 0:

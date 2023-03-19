@@ -74,9 +74,10 @@ def get_args():
                                 Default is 200.', type=str)
         parser.add_argument('--careful', action='store_true',
                             help='Assembles reads with SPAdes using lower k-mer values and runs in single cell mode.')
-        parser.add_argument('--dry_run', action='store', default="False", 
-                            help='Perform a dry run of the pipeline and check the \
-                                input files, databases and expected output files', type=str)                                                        
+        parser.add_argument('--genemark_path', action='store', default=None,
+                            help='Path to GeneMark-ES script.', type=str)
+        parser.add_argument('--print_workflow', action='store_true', default="False", 
+                            help='Will print a summary of the workflow upon completion of the script')                                                        
 
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
@@ -129,13 +130,15 @@ def main():
 
     # TEST CODE FOR GENERATING WORKFLOW DESCRIPTION
     if input_args.print_workflow is True:
-        if input_args.kraken2 is True: kraken = " and non-fungal reads removed using kraken2" else: kraken = ""
+        if input_args.kraken2 is True: kraken = " and non-fungal reads removed using kraken2"
+        else: kraken = ""
         trimming = f"Short sequence reads were trimmed with Trimmomatic{kraken}."
         if input.args.nanopore is None: 
             trimming + f"MinION reads were trimmed with porechop and length-filtered to {input_args.minimum_length} bp with bbduk.sh before being converted to FASTA format. Short reads were mapped to these reads and corrected using ropebwt2 and FMLRC."
             assembly_proc = "Corrected long reads were assembled with Flye"
         else:
-            if input_args.careful is True: parameters = " with the \'careful\' parameter" else: parameters = ""
+            if input_args.careful is True: parameters = " with the \'careful\' parameter" 
+            else: parameters = ""
             assembly_proc = f"Reads were assembled with SPADes{parameters}."
         annotation = f"Annotation was performed using the Funannotate pipeline, using {input_args.min_training_models} for GeneMark."
         if input_args.eggnog is True:
