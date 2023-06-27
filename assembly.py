@@ -340,9 +340,9 @@ def hybrid_polish(input_args, filenames, assembly_path):
     if lib.file_exists(filenames.medaka_sorted_sam, \
         f"{filenames.medaka_sorted_sam} already exists. Skipping...", f"Sorting {filenames.medaka_consensus_sam} with samtools...") == False:
         samtools_sort(input_args, filenames, assembly_path)
-    if lib.file_exists(filenames.assembly_sorted_index, \
-        f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
-        samtools_index(input_args, filenames, assembly_path)
+   # if lib.file_exists(filenames.assembly_sorted_index, \
+    #    f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
+     #   samtools_index(input_args, filenames, assembly_path)
     if lib.file_exists(filenames.polypolish_consensus, \
         f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
         polypolish(input_args, filenames, assembly_path)

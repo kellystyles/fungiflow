@@ -50,6 +50,8 @@ def get_args():
                         help='path to genbank file(s)', required=True)
     parser.add_argument('-p', '--phmm_dir', action='store', type=str,
                         help='path to pHMMs', required=True)
+    parser.add_argument('-o', '--output_dir', action='store', type=str,
+                        help='path to output directory', required=False)
     parser.add_argument('-b', '--build', action='store_true',
                         help='Build pHMM from multiple sequence alignments. Multiple sequence alignments must be in \'phmm_dir\' and have suffix \'.msa.fasta\'', required=False)
     parser.add_argument('-a', '--align', action='store_true',
@@ -58,7 +60,7 @@ def get_args():
                         help='comma-separated list of pHMMs required to be in the cluster, e.g., phmmA,phmmB,phmmC', required=False)
     parser.add_argument('-m', '--trusted_modifier', action='store', default=None, type=float,
                         help='modifier larger than 0 and including 1 for calculating trusted cutoff bitscores. 1 = no cutoff, 0.1 = very stringent. \
-                        Use \'d\' to override existing data and use defaults', required=False)
+                        Default is 0.2 for alignments with >= 5 seqs and 0.5 for <= 4 seqs', required=False)
     parser.add_argument('-t', '--trusted_cutoffs_file', action='store', default=None, type=str,
                         help='file containing tab-separated trusted cutoffs for each pHMM, e.g. \'phmmA\tbitscore\'', required=False)
     if len(sys.argv) == 1:
@@ -88,20 +90,25 @@ def get_cds(gbk, out_filename):
 
     Extract protein sequences from a GBK file and write to a multi-FASTA file
     """
-    if os.path.exists("cds") is False:
-        os.makedirs("cds", exist_ok=True)
     if not os.path.isfile(out_filename):
         with open(gbk) as handle, open(out_filename, "w") as output_handle:
             for seq_record in SeqIO.parse(handle, "genbank"):
                 for seq_feature in seq_record.features:
                     if seq_feature.type == "CDS":
                         try:
-                            assert len(seq_feature.qualifiers['translation']) == 1
+                            translation = seq_feature.qualifiers['translation'][0]
+                            if len(translation) > 0:
+                                # will take locus_tag preferentially, else
+                                # will use protein_id
+                                try:
+                                    locus_tag = seq_feature.qualifiers['locus_tag'][0]
+                                except KeyError:
+                                    locus_tag = seq_feature.qualifiers['protein_id'][0]
                             output_handle.write(">%s \n%s\n" % (
-                                seq_feature.qualifiers['locus_tag'][0],     # change protein_id to appropriate name value, depending on GBK source
-                                seq_feature.qualifiers['translation'][0]))
+                                locus_tag,     
+                                translation))
                         except KeyError:
-                            continue
+                            continue  # Skip the feature if 'translation' key is not present
     return out_filename
 
 def build_hmm(msa, output_file):
@@ -168,16 +175,16 @@ def trusted_hmmsearch(hmms, fasta, trusted_cutoff_file):
 
     Searches a list of pHMMs against a target protein multi-FASTA using trusted cutoffs.
     """
+    alphabet = pyhmmer.easel.Alphabet.amino()
     # load trusted cutoffs
     cutoffs = {}
     with open(trusted_cutoff_file, "r") as tc_file:
         for line in tc_file:
             line = line.split()
-            print(line)
             cutoffs[line[0]] = float(line[1])
     
     # load protein sequences
-    with pyhmmer.easel.SequenceFile(fasta, digital=True) as seqs_file:
+    with pyhmmer.easel.SequenceFile(fasta, digital=True, alphabet=alphabet) as seqs_file:
         proteins = seqs_file.read_block()
     #print(f"Loaded {len(proteins)} protein CDS from {fasta}")
 
@@ -234,15 +241,20 @@ def filter_hits(results, gbk_results_file, required):
     hmm_hits = [best_results[i][1] for i in best_results]
 
     # Check all require pHMMs have hits
-    if required is not None:
-        if all(elem in hmm_hits for elem in required):
+    if len(hmm_hits) > 0:
+        if required is not None:
+            if all(elem in hmm_hits for elem in required):
+                with open(gbk_results_file, "w") as f:
+                    for i in best_results:
+                        line = "\t".join([str(best_results[i][0]), str(best_results[i][1]), "{:.1f}".format(best_results[i][2])])
+                        f.write(line + "\n")
+                return best_results
+        else:
             with open(gbk_results_file, "w") as f:
                 for i in best_results:
                     line = "\t".join([str(best_results[i][0]), str(best_results[i][1]), "{:.1f}".format(best_results[i][2])])
                     f.write(line + "\n")
             return best_results
-    else:
-        return best_results
 
 def open_gbk(infile):
     """
@@ -271,7 +283,7 @@ def get_range(infile, recs, lt):
     # loop through GBK records and get information
 
     extracted_loci = []
-    cluster_file = os.path.join("clusters", f"cluster_{file}_{str(len(lt))}.gb")
+    cluster_file = os.path.join(out_dir, "clusters", f"cluster_{file}_{str(len(lt))}.gb")
     for rec in recs:
         loci = [feat for feat in rec.features if feat.type == "CDS"]
         organism = rec.annotations['organism']
@@ -300,7 +312,7 @@ def get_range(infile, recs, lt):
             #print('Didn\'t get any indices even though the genes seemed to match. Couldn\'t slice.\n')
             pass
     #print(f"number of loci: {len(extracted_loci)}")
-    if os.path.isfile(os.path.join("clusters", cluster_file)) is False:
+    if os.path.isfile(os.path.join(out_dir, "clusters", cluster_file)) is False:
         SeqIO.write(extracted_loci, cluster_file, "genbank")
 
 def align_sequences(infile, out_filename):
@@ -311,8 +323,8 @@ def align_sequences(infile, out_filename):
     Align sequences using MUSCLE
     """
     if not os.path.isfile(out_filename):
-        print(f"alignning {out_filename}")
-        cmd = f"muscle -align {infile} -output {out_filename}"
+        print(f"aligning {out_filename}")
+        cmd = f"muscle -in {infile} -out {out_filename}"
         subprocess.run([cmd], shell=True)
     return 
 
@@ -376,6 +388,7 @@ def calc_trusted_cutoffs(list_phmms, phmm_dir, trusted_modifier, trusted_cutoff_
                         trusted_cutoffs.append(tc_dict)
 
     if len(trusted_cutoffs) != len(list_phmms):
+        print(f"TCs:{len(trusted_cutoffs)} vs List pHMMs:{len(list_phmms)}")
         print("Not all trusted cutoffs could be calculated for your pHMMs. Please check your inputs\n")
 
     return trusted_cutoffs
@@ -407,13 +420,14 @@ def search_gbk(i, gbk_file, phmms, required, phmm_dir):
     from a GBK file using the input pHMM files.
     """
     
-    gbk_prefix = gbk_file.split(".")[0].split("/")[1]
-    cds_outfile = os.path.join("cds", f"{gbk_prefix}.fasta")
-    gbk_results_file = os.path.join("hmm_output", f"{gbk_prefix}_results.tsv")
+    gbk_prefix = gbk_file.split(".")[0].split("/")[-1]
+    cds_outfile = os.path.join(out_dir, "cds", f"{gbk_prefix}.fasta")
+    gbk_results_file = os.path.join(out_dir, "hmm_output", f"{gbk_prefix}_results.tsv")
     global files_len
     hits = None
     get_cds(gbk_file, cds_outfile)
-    print(f" - {gbk_file:<30} - {i+1:15}/{files_len}")
+    gbk_file_formatted = gbk_file[:35].ljust(35+5)
+    print(f" - {gbk_file_formatted} - {i+1:5}/{files_len}")
     
     # if condition looks for existing TSV data file and reads data to df
     try:
@@ -422,7 +436,7 @@ def search_gbk(i, gbk_file, phmms, required, phmm_dir):
             with open(gbk_results_file) as f:
                 lines = f.readlines()
                 for line in lines:
-                    print(line)
+                    #print(line)
                     line = line.split()
                     hits.append(line[0], line[1], line[2])
         else:
@@ -442,7 +456,7 @@ def search_gbk(i, gbk_file, phmms, required, phmm_dir):
         recs = open_gbk(gbk_file)
         # filter hits
         filtered_hits = filter_hits(hits, gbk_results_file, required)
-        print(filtered_hits)
+        #print(filtered_hits)
         if filtered_hits is not None:
             locus_tags = [filtered_hits[i][0] for i in filtered_hits]
             if len(locus_tags) > 0:
@@ -450,10 +464,10 @@ def search_gbk(i, gbk_file, phmms, required, phmm_dir):
                 get_range(gbk_file, recs, locus_tags)
 
         # Adds product names to each hit in each cluster genbank file
-        clusters = os.listdir("clusters")
+        clusters = os.listdir(os.path.join(out_dir, "clusters"))
         for cluster in clusters:
             if cluster.split("_")[1] == gbk_prefix:
-                update_cluster(os.path.join("clusters", cluster), filtered_hits)
+                update_cluster(os.path.join(out_dir, "clusters", cluster), filtered_hits)
 
 def multiprocess_function(function, directory, var1, var2, var3):#, var4):
     """
@@ -461,7 +475,7 @@ def multiprocess_function(function, directory, var1, var2, var3):#, var4):
     function to each file in a given directory
     """
     # Get a list of all files in the directory
-    files = [f for f in os.listdir(directory) if f.endswith('.gbk') or f.endswith('.gb')]
+    files = [f for f in os.listdir(directory) if f.split(".")[-1].startswith('gb')]
     global files_len
     files_len = len(files)
 
@@ -510,6 +524,8 @@ def main():
     args = get_args()
     phmm_dir = args.phmm_dir
     gbk_dir = args.gbk_dir
+    global out_dir
+    out_dir = args.output_dir
     trusted_mod = args.trusted_modifier
     trusted_file = args.trusted_cutoffs_file
     try:
@@ -532,9 +548,9 @@ def main():
             phmm_out = os.path.join(phmm_dir, f"{prefix}.h3m")
             build_hmm(os.path.join(phmm_dir, msa), phmm_out)
     
-    make_path("cds")
-    make_path("hmm_output")
-    make_path("clusters")
+    make_path(os.path.join(out_dir, "cds"))
+    make_path(os.path.join(out_dir, "hmm_output"))
+    make_path(os.path.join(out_dir, "clusters"))
 
     phmms = [f for f in os.listdir(phmm_dir) if f.endswith('.hmm') or f.endswith('.h3m')]
 
@@ -544,14 +560,15 @@ def main():
     # apply sarch_gbk function to each GBK file
     multiprocess_function(search_gbk, gbk_dir, phmms, required_stripped, phmm_dir)#, trusted_cutoffs, 
 
-    clusters = os.listdir("clusters")
-    # Reports the number of clusters extracted
+    clusters = os.listdir(os.path.join(out_dir, "clusters"))
+    # Reports the number of clusters extracted 
     if len(clusters) == 1:
         print(f"\n{len(clusters)} cluster was found and is available in the \'clusters\' directory\n")
     elif len(clusters) == 0:
-        print("\n{RED} {BOLD} No clusters found :'( {END}")
+        print(f"\n{RED} {BOLD} No clusters found :'( {END}")
     else:
-        print(f"\n{YELLOW} {BOLD} {len(clusters)} clusters were found and are available in the \'clusters\' directory {END}\n")
+        cluster_path = os.path.join(out_dir, "clusters")
+        print(f"\n{YELLOW} {BOLD} {len(clusters)} clusters were found and are available in the \'{cluster_path}\' directory {END}\n")
 
 if __name__ == '__main__':
     main()

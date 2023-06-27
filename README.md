@@ -2,55 +2,77 @@
 
 ## Overview
 
-Repeatable, parallelized, readable, and user friendly workflow for identifying fungal biosynthetic gene clusters (BGCs) from low-coverage short read Illumina sequence data with minimal inputs. This pipeline is mostly written in `python3`.
+> A repeatable workflow for identifying fungal biosynthetic gene clusters (BGCs) from low-coverage short read Illumina sequence data with minimal inputs. 
+
+A Python pipeline primarily designed for manipulating fungal low-coverage short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data and a post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+
+[^1]: Blin, K., Shaw, S., Kloosterman, A. M., Charlop-Powers, Z., Van Wezel, G. P., Medema, M. H., & Weber, T. (2021). antiSMASH 6.0: improving cluster detection and comparison capabilities. *Nucleic acids research*, *49*(W1), W29-W35.
+[^2]: Palmer, J., & Stajich, J. (2021). Funannotate v1. 8.3: eukaryotic genome annotation (Version 1.8. 3). *Zenodo. doi*, *10*.
+[^3]: Laetsch, D. R., & Blaxter, M. L. (2017). BlobTools: Interrogation of genome assemblies. *F1000Research*, *6*(1287), 1287.
 
 ![Overview of fungiflow pipeline](./figures/map.png)
-*Overview of fungiflow pipeline*
+
+## Fungiflow pipeline
 
 The overall workflow is defined by several modules:
-1. Assembly module
+1. **Assembly module**
     1. Trimming of short Illumina reads with Trimmomatic
     2. Trimming of long MinION reads with porechop
     3. Correction of trimmed MinION reads with FMLRC, using trimmed short reads
-    4. (OPTIONAL) Filtering out non-eukaroytic contamination with Kraken2 (standard database | Oct 2020)
+    4. Filtering out non-eukaroytic contamination with Kraken2 (standard database | Oct 2020) - *OPTIONAL*
     5. QC of trimmed and filtered reads with FastQC
     6. Assembly:
         - SPAdes for assembly with short Illumina sequence reads
         - Flye for hybrid assembly with short Illumina and long MinION sequence reads
-2. (OPTIONAL) Annotation module:
+2. **Annotation module** - *OPTIONAL*
     1. Cleaning, sorting, soft masking, and gene prediction of contigs with the Funannotate pipeline (v1.8.3)
-3. Post-analysis module:
+3. **Post-analysis module**
     1. Evaluations of assemblies using QUAST
-    2. (OPTIONAL) Annotation and extraction of ITS regions using ITSx and BLASTn of ITS sequences (ITS_Refseq_Fungi | Oct 2020)
-    3. (OPTIONAL) Identification of BGCs using antiSMASH (v5.1.3)
+    2. Annotation and extraction of ITS regions using ITSx and BLASTn of ITS sequences (ITS_Refseq_Fungi) - *OPTIONAL*
+    3. Identification of BGCs using antiSMASH (v6.1) - *OPTIONAL*
     4. Report generation
-4. (OPTIONAL) Blobplot module:
+4. **Blobplot module** - *OPTIONAL*
     1. Minimap2 maps short reads to assembly file in BAM format
     2. Samtools indexes the BAM file 
-    3. MegaBLAST assigns taxonomy to each contig (NCBI-nt | Jun 2022)
+    3. MegaBLAST assigns taxonomy to each contig (NCBI-nt)
     4. Blobtools generates blobplots
 
-### Low-coverage genome assembly
-Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs (*There is an accessory script, `cluster_search_v3.py` that can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*). These strains of interest can then be sequenced to a higher coverage using further short reads or MinION long reads and a more thorough examination performed. 
-Below is some examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 diverse fungal strains of differing coverages.
-The tests from the same synthetic read datasets as above showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference.
+## Low-coverage genome assembly
+
+Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs.
+
+> *There is an accessory script, `cluster_search_v3.py` that can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*. 
+
+These strains of interest can then be sequenced to a higher coverage using further short reads or MinION long reads and a more accurate and complete assembly prepared. 
+Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
+The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference.
 ![Assembly metrics of differing coverage synthetic assemblies of 10 fungal strains](./figures/reference_metrics.png)
 
 ## Installation
-Clone this GitHub repositroy by entering ```git clone https://github.com/kellystyles/fungiflow.git``` in the directory you would like to install in. You could add this directory to your PATH. 
+
+Clone this GitHub repository by entering the following command in the desired installation directory:
+
+```
+git clone https://github.com/kellystyles/fungiflow.git
+```
+
+You can add this directory to your PATH by executing the following commands:
+
 ```
 export PATH=$PATH:/path/to/fungiflow/ >> ~/.bashrc
 source ~/.bashrc
 ```
 
-This pipeline runs from several Singularity containers to ensure a repeatable and consistent output from input data. Download these from Singularity Hub as so:
+To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
+
 ```
-singularity pull library://kellystyles/fungiflow/fungiflow_v2.sif       - for the main pipeline image
-singularity pull library://kellystyles/fungiflow/funannotate_v2.sif     - for the funannotate image
-singularity pull library://kellystyles/fungiflow/antismash_v2.sif       - for the antismash image
+singularity pull library://kellystyles/fungiflow/fungiflow_v2.sif       # main pipeline image
+singularity pull library://kellystyles/fungiflow/funannotate_v2.sif     # funannotate image (Official Docker image + EggNOGG)
+singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
 ```
 
-Consequently, the only dependency required is `singularity`, as well as several third party `python3` libraries, including `numpy` and `pandas`, and optionally `seaborn`. These can be easily installed using `mamba` (a faster version of conda) as so:
+The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` as follows:
+
 ```
 mamba create -n fungiflow python3
 source activate fungiflow
@@ -59,30 +81,50 @@ mamba deactivate
 ```
 
 ### GeneMark-ES gene predictions
-If you wish to use the optional Funannotate module, you may wish to obtain a copy of the GeneMark-ES software and the license to use it. GeneMark-ES provides high quality predictions of genes for fungal assemblies, but due to licensing it cannot be bundled with the Fungiflow Singularity images. It is obtainable from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi).  Extract the license key `gm_key_64` file to `~/` as so:
+
+If you plan to use the optional Funannotate module, you'll need to obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality gene predictions for fungal assemblies, but it can't be bundled with the Fungiflow Singularity images due to licensing restrictions. The perl shebangs in the GeneMark-ES scripts will need to be altered to `/venv/bin/perl`. You can download GeneMark-ES from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi) and extract the license key `gm_key_64` to `~/` and change the perl shebangs using the following commands:
+
 ```
+# transfer key to home
 tar -xvzf gm_key_64.tar.gz -O gm_key & mv gm_key ~/.gm_key
+
+# change perl shebangs
+cd /venv/bin/gmes_linux_64/
+./change_path_in_perl_scripts.pl /venv/bin/perl
 ```
-You can supply the path to the GeneMark-ES bin using the `--genemark_path` parameter of the main script.
+
+You can provide the path to the GeneMark-ES binary using the `--genemark_path` parameter in the main script.
 
 ### Databases
 
-Several databases are needed for optional fungiflow modules to operate correctly. These can be installed by running the `install.py` script.
+To ensure the optional modules of Fungiflow work correctly, you need to install several databases. Run the `install.py` script to install them:
+
 ```
 python3 install.py --help
 ```
-All core databases are bundled within the Singularity containers so you can perform a basic run straight out of the box. The following optional databases are pretty large so the install may take several hours to download with 4 CPUs:
-    - Kraken2 standard database ( 213 GB | ~6 hours); required for taxonomic filtering of short reads.
-    - ITS_Refseq_Fungi database ( 162 Mb | 20 mins); required for BLASTn of extracted ITS sequences.
-    - NCBI-nt database (132 GB | ~4 hours); required for assigning taxonomy to contigs for the Blobplots module.
-Note that these databases may differ to the ones stated in the workflow as they might be more up to date.
+
+All core databases are bundled within the Singularity containers, allowing you to run a basic setup out of the box. However, the following optional databases are quite large, so downloading them may take several hours with 4 CPUs:
+
+- Kraken2 standard database (213 GB | ~6 hours): required for taxonomic filtering of short reads.
+- ITS_Refseq_Fungi database (162 Mb | 20 mins): required for BLASTn of extracted ITS sequences.
+- NCBI-nt database (132 GB | ~4 hours): required for assigning taxonomy to contigs for the Blobplots module.
+
+Note that the databases mentioned here might differ from the ones stated in the workflow, as they may be more up-to-date.
 
 ## Usage
+
 A typical run of the core modules can be run like:
 ```
 python3 fungiflow.py -if shortf_reads_path -ir shortr_reads_path -data database_path
 ```
-Usage can be shown using `python3 fungiflow.py --help`.
+> To utilise parallel computing, sequence read names can be appended with an array value and pair information. This can be automatically performed by running `name_change.sh`. This will return a `filenames.txt` document which lists the name of each sequence file and the number prepended to it. Use this script as below:
+>
+> ```
+> bash name_change.sh sequence_reads_directory
+> ```
+
+All runtime parameters can be shown using `python3 fungiflow.py --help`.
+
 ```
 usage: fungiflow.py [-h] -d DIRECTORY -if ILLUMINA_F -ir ILLUMINA_R -a ARRAY -c CPUS -m MEM 
                     [-ant] [-f] [-s SINGULARITY_IMAGE] [-data DATABASE_PATH] 
@@ -118,7 +160,7 @@ optional arguments:
   -sa SINGULARITY_ANTISMASH, --singularity_antismash SINGULARITY_ANTISMASH
                         Singularity image for antiSMASH
   -its, --its           Search assembly for ITS sequences. Part of post-analysis module.
-  -k, --kraken2         Run trimmed reads against Kraken2 standard database. Will save unclassified reads (i.e., not matching the standard database), which will be used for assembly.  
+  -k, --kraken2         Run trimmed reads against Kraken2 standard database. Will save unclassified reads (i.e., not matching the standard database), which will be used for assembly. Should not be used for a metagenomic assembly. 
                         Part of taxonomic module.
   -e, --eggnog          Functionally annotate the assembly proteins with eggnog. Part of annotation module.
   -b, --blobplot        Run blobtools module on output assembly. Part of blobtools module.
@@ -150,18 +192,13 @@ sbatch fungiflow_slurm.sh
 ```
 
 ### Speed
-This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 cpus and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to at least 100 Gb as the entire hash table will need to be loaded into memory.
-The tests from the same synthetic read datasets as above showed CPU and memory efficiency as below:
+This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to at least 100 Gb, as the entire hash table will need to be loaded into memory.
+The tests from the same synthetic read datasets run with 16 CPUs and 32 GB memory CPU and memory efficiency as below:
 ![Computational efficiency of differing coverage synthetic assemblies of 10 fungal strains](./figures/synthetic_tests.png)
 
 ## Output
-### Files/Directory Tree
-After cloning into the fungiflow GitHub repository, create a new project folder in `/fungiflow/projects/`. In this folder, create a nested directory named `data/raw` and place all raw Illumina sequence reads into this folder in `*fq.gz format` (no preprocessed reads). The final path should look like `/fungiflow/projects/project_name/data/raw`.
-
-To utilise parallel computing, sequence read names can be appeneded with an array value and pair information. This can be automatically performed by running `name_change.sh` in the `/fungiflow/scripts` folder as below. This will return a `filenames.txt` document which lists the name of each sequence file and the number prepended to it.
-```
-bash name_change.sh ...
-```
+### File tree
+After cloning into the Fungiflow GitHub repository, create a new project folder in `/fungiflow/projects/`. In this folder, create a nested directory named `data/raw` and place all raw Illumina sequence reads into this folder in `*fq.gz format` (no preprocessed reads). The final path should look like `/fungiflow/projects/project_name/data/raw`.
 
 ```
 project directory
@@ -246,16 +283,16 @@ project directory
 |   |   megablast.out                     # MegaBLAST output
 |   |   ...
 
-```   
+```
 ### Collating data from multiple Fungiflow runs
-A handy script `parse_all.py` is provided which will collate various information from each Fungiflow output directory. This will collate data on assembly metrics from `Quast`, single copy orthologs from `BUSCO`, BGC information from `antiSMASH`, and ITS sequence information from `ITSx`. Each output directory will have data collated onto a single row in a CSV file `master_results.csv`. Additionally, all the BGCs from each output directory will be collated into a CSV file `all_bgcs.csv`.
+A script `parse_all.py` is provided which will collate various information from each Fungiflow output directory. This will collate data on assembly metrics from `Quast`, single copy orthologs from `BUSCO`, BGC information from `antiSMASH`, and ITS sequence information from `ITSx`. Each output directory will have data collated onto a single row in a CSV file `master_results.csv`. Additionally, all the BGCs from each output directory will be collated into a CSV file `all_bgcs.csv`.
 
 Usage is below, where `parent_directory` is a directory containing Fungiflow output directories.
 ```
 Usage: python3 parse_all.py 'parent_directory'
 ```
 ## cluster_search
-An accessory script, `cluster_search_v3.py` can identify disparate BGCs that are separated across contigs in low-coverage/discontiguous genome assemblies. This works by searching the proteins from an assembly with gene predictions with user-supplied pHMMs. It can build a pHMM from a multiple alignment as well if necessary. It will apply a set of rules (user-supplied list of pHMMs that must have hits) and collate all hits in a 10 kb context into a GenBank file for each cluster. This script has the dependencies `pyhmmer` and `biopython` (>/1.8) and can be installed using mamba as below:
+An accessory script, `cluster_search_v3.py` can identify disparate BGCs that are separated across contigs in low-coverage/discontiguous genome assemblies. This works by searching the proteins from an assembly with gene predictions with user-supplied pHMMs. It can build a pHMM from a multiple alignment as well if necessary. It will apply a set of rules (user-supplied list of pHMMs that must have hits) and collate all hits within a 10 kb context into a GenBank file for each cluster. This script has the dependencies `pyhmmer` and `biopython` (>=1.8) and can be installed using mamba as below:
 ```
 mamba create -n cluster_search python3
 source activate cluster_search
@@ -278,46 +315,111 @@ optional arguments:
                         path to genbank file(s)
   -p PHMM_DIR, --phmm_dir PHMM_DIR
                         path to pHMMs
-  -b, --build           Build pHMM from multiple sequence alignments. Multiple sequence alignments must be in 'phmm_dir' and have suffix '.msa.fasta'
-  -a, --align           Align multi-FASTA to make multiple sequence alignments. multi-FASTA must be in 'phmm_dir' and have suffix '.prots.fasta'
+  -b, --build           Build pHMM from multiple sequence alignments. Multiple sequence alignments must be 							in 'phmm_dir' and have suffix '.msa.fasta'
+  -a, --align           Align multi-FASTA to make multiple sequence alignments. multi-FASTA must be in 								'phmm_dir' and have suffix '.prots.fasta'
   -r REQUIRED, --required REQUIRED
                         comma-separated list of pHMMs required to be in the cluster, e.g., phmmA,phmmB,phmmC
   -m TRUSTED_MODIFIER, --trusted_modifier TRUSTED_MODIFIER
-                        modifier larger than 0 and including 1 for calculating trusted cutoff bitscores. 1 = no cutoff, 0.1 = very stringent. Use 'd' to override existing data and     
+                       	modifier larger than 0 and including 1 for calculating trusted cutoff bitscores. 1 = 					   	 no cutoff, 0.1 = very stringent. Use 'd' to override existing data and     
                         use defaults
   -t TRUSTED_CUTOFFS_FILE, --trusted_cutoffs_file TRUSTED_CUTOFFS_FILE
                         file containing tab-separated trusted cutoffs for each pHMM, e.g. 'phmmA bitscore'
 ```
-Note above that the varying input FASTA files for `--build` and `--align` will need to have an additional suffix to denote the type of data in each.
+> Note above that the varying input FASTA files for `--build` (`*.msa.fasta`) and `--align` (`*.prots.fasta`) will need to have an additional suffix to denote the type of data in each.
 
 Some usage cases are below:
 
 Basic usage: 
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir`
 
 Usage if you want to use a modifier for calculating very stringent trusted cutoffs: 
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.1`
 
-Usage if you want to use a modifier for calculating very relaxed trusted cutoffs: 
+Usage if you want to use a modifier for calculating very relaxed trusted cutoffs:
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.9`
 
 Usage if you want to filter hits to list of required pHMM hits: 
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -r list_required_models`
 
 Usage if you want to build pHMMs from multiple sequence alignments:
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -b`
 
 Usage if you want to align a multi-FASTA of proteins and build pHMMs from the multiple sequence alignments:
+
     `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -a -b`
 
-Input:
+Inputs:
+
     `--gbk_dir `  =   directory containing genbank files
     `--phmm_dir`  =   directory containing pHMM files
     `--required`  =   (optional) pHMMs that must be included in output clusters
 
 
-## Planned implementations
+### Planned implementations
 
 - Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `MegaBLAST` in the blobplots package).
-- Implementation of assembly using only MinION long reads, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
-- Whilst the repeatability and accessibility is ensured by the usage of Singularity containers, a conda environment and PyPI package is planned.
+- Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
+- Whilst the repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
+
+## Known Bugs
+
+
+
+## References
+
+Assembly Module
+
+| Software     | Version     | Reference                  |
+|--------------|-------------|----------------------------|
+| FastQC       | v0.11.9     | Andrews, 2010.             |
+| Trimmomatic  | v0.36       | Bolger et al., 2014.       |
+| Kraken2      | v2.1.2      | Wood et al., 2019.         |
+| SPADes       | v3.12.0     | Bankevich et al., 2012.    |
+| metaSPADes   | v3.12.0     | Nurk et al., 2017.         |
+| MaSuRCA      | v3.4.2      | Zimin et al., 2017.        |
+| Racon        | 1.4.3       | Vaser et al., 2017.        |
+| Minimap2     | 2.24-r1122  | Li, 2021.                  |
+| FMLRC        | 1.0.0       | Wang et al., 2018.         |
+| Flye         | 2.8.3-b1725 | Kolmogorov   et al., 2019. |
+| Porechop     | 0.2.4       | Wick, 2018.                |
+| BBTools      | 38.31       | Bushnell, 2014.            |
+| BWA-mem2     | 2.2.1       | Vasimuddin et al., 2019.   |
+| Samtools     | 1.16.1      | Danecek et al., 2021.      |
+| Polypolish   | 1.23        | Wick & Holt, 2022.         |
+| Medaka       | 1.4.3       | Wright et al., 2021.       |
+
+Funannotate Module
+
+| Software    | Version  | Reference                      |
+|-------------|----------|--------------------------------|
+| funannotate | 1.83     | Palmer & Stajich, 2021.        |
+| GeneMark-ES | 4.71_lic | Ter-Hovhannisyan et al., 2008. |
+
+Post-analysis Module
+
+| Software    | Version   | Reference                     |
+|-------------|-----------|-------------------------------|
+| ITSx        | v1.1.2    | Bengtsson‐Palme et al., 2013. |
+| Quast       | v5.1.0rc1 | Gurevich et al., 2013.        |
+| antiSMASH   | 6.0.1     | Blin et al., 2021.            |
+| ncbi-BLAST+ | 2.13.0+   | Camacho et al., 2009.         |
+
+Blobtools Module
+
+| Software    | Version | Reference                |
+|-------------|---------|--------------------------|
+| blobtools   | 1.1.1   | Laetsch & Blaxter, 2017. |
+| ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.    |
+
+cluster_search
+
+| Software  | Version | Reference              |
+| --------- | :------ | ---------------------- |
+| pyhmmer   | 0.7.1   | Larralde, unpublished. |
+| muscle    | v5      | Edgar, 2021.           |
+| BioPython | 1.8     | Cock et al., 2009.     |

@@ -200,6 +200,7 @@ def plot_strip(dataframe, input_args, results_path):
     ax = sns.swarmplot(data=dataframe, x=dataframe["BGC_length"], y=dataframe["partial"], hue=dataframe["BGC_type"], palette="tab10")
     ax.legend(loc='right', bbox_to_anchor=(1.5, 0.5), title="BGC type")
     flag = True
+
     for line in range(0,dataframe.shape[0]):
         if flag == True:
             align = "left"
@@ -295,14 +296,16 @@ def parse_json(json_object,json_file):
         grouped = array.groupby('contig')
         to_drop = []
         for group in grouped:
-            single_locations = group[group['kind'] == 'single']['BGC_location'].tolist()
-            neighbouring_locations = group[group['kind'] == 'neighbouring']['BGC_location'].tolist()
+            #print(type(group))
+            single_locations = group[1][group[1]['kind'] == 'single']['BGC_location'].tolist()
+            neighbouring_locations = group[1][group[1]['kind'] == 'neighbouring']['BGC_location'].tolist()
             for single in single_locations:
+                single = single.replace('<', '').replace('>', '')
                 single_left, single_right = [int(x) for x in single.split(':')]
                 for neighbouring in neighbouring_locations:
                     neighbouring_left, neighbouring_right = [int(x) for x in neighbouring.split(':')]
                     if single_left >= neighbouring_left and single_right <= neighbouring_right:
-                        to_drop.extend(group[group['BGC_location'] == single].index)
+                        to_drop.extend(group[1][group[1]['BGC_location'] == single].index)
         array.drop(to_drop, inplace=True)
     except KeyError:
         pass
@@ -339,6 +342,7 @@ def parse_antismash(input_args, filenames):
         flat["BGC_types"] = bgc_list
         flat["BGC_mean_length"] = round(df['BGC_length'].mean(), 2)
         flat["BGC_median_length"] = round(df['BGC_length'].median(), 2)
+        flat["total_BGC_length"] = flat['BGC_length'].sum()
 
         flat_df = pd.DataFrame.from_dict(flat)
         
@@ -414,31 +418,34 @@ def main(input_args,filenames):
         filenames.antismash_json = os.path.join(antismash_path,f"{input_args.array}.json")
         filenames.antismash_svg = os.path.join(results_path,f"{input_args.array}_bgctype_vs_bgclength.svg")
         filenames.bgc_results = os.path.join(results_path,f"{input_args.array}_bgc.csv")
-
-        # If antiSMASH JSON does not exist, run antiSMASH
-        if lib.file_exists(filenames.antismash_json,f"antiSMASH already analysed!",f"Need to run antiSMASH") is False:
-            # need to remove existing failed antiSMASH directory otherwise antiSMASH will exit
-            # then remake it
-            if os.path.exists(antismash_path):
-                lib.print_n("Removing existing antiSMASH output directory")
-                shutil.rmtree(antismash_path)
-            lib.make_path(antismash_path)
-            # Will preferentially use the functionally annotated GBK file
-            if lib.file_exists(filenames.funannotate_func_gbk,f"Using {filenames.funannotate_func_gbk} as input for antiSMASH", \
-                f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                filenames.antismash_assembly = filenames.funannotate_func_gbk
-            # else will use the prediction GBK file
-            elif lib.file_exists(filenames.funannotate_gbk,f"Using {filenames.funannotate_gbk} as input for antiSMASH", \
-                f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                filenames.antismash_assembly = filenames.funannotate_gbk
-            # else will use the sorted assembly with nicer contig names if Funannotate has been run
-            elif lib.file_exists(filenames.funannotate_sort_fasta,f"Using {filenames.funannotate_sort_fasta} as input for antiSMASH", \
-                f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                filenames.antismash_assembly = filenames.funannotate_sort_fasta
-            else:
-                filenames.antismash_assembly = filenames.assembly_fasta
+        try:
+            # If antiSMASH JSON does not exist, run antiSMASH
+            if lib.file_exists(filenames.antismash_json,f"antiSMASH already analysed!",f"Need to run antiSMASH") is False:
+                # need to remove existing failed antiSMASH directory otherwise antiSMASH will exit
+                # then remake it
+                if os.path.exists(antismash_path):
+                    lib.print_n("Removing existing antiSMASH output directory")
+                    shutil.rmtree(antismash_path)
+                lib.make_path(antismash_path)
+                # Will preferentially use the functionally annotated GBK file
+                if lib.file_exists(filenames.funannotate_func_gbk,f"Using {filenames.funannotate_func_gbk} as input for antiSMASH", \
+                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                    filenames.antismash_assembly = filenames.funannotate_func_gbk
+                # else will use the prediction GBK file
+                elif lib.file_exists(filenames.funannotate_gbk,f"Using {filenames.funannotate_gbk} as input for antiSMASH", \
+                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                    filenames.antismash_assembly = filenames.funannotate_gbk
+                # else will use the sorted assembly with nicer contig names if Funannotate has been run
+                elif lib.file_exists(filenames.funannotate_sort_fasta,f"Using {filenames.funannotate_sort_fasta} as input for antiSMASH", \
+                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                    filenames.antismash_assembly = filenames.funannotate_sort_fasta
+                else:
+                    filenames.antismash_assembly = filenames.assembly_fasta
+                antismash(input_args,filenames,antismash_path)
+        except AttributeError:
+            filenames.antismash_assembly = filenames.assembly_fasta
             antismash(input_args,filenames,antismash_path)
-        
+
         # If the antiSMASH JSON file exists, parse it and plot some figures
         # Might need to add in an exception to catch any errors arising from trying to parse an incomplete antiSMASH run
         if lib.file_exists(filenames.antismash_json,"","") is True:
@@ -447,6 +454,7 @@ def main(input_args,filenames):
             try:
                 final_df = final_df.merge(bgc_df, on="ID")
                 final_df.drop(columns=["ID"])
+                print("plotting")
                 plot_strip(bgc_df, input_args, results_path)
                 plot_violin(bgc_df, input_args, results_path)
             except TypeError:

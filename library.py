@@ -242,7 +242,8 @@ def check_databases(input_args):
                 pass
     except IndexError:
         print("Please supply a value for `--database_path`")
-
+    except TypeError:
+        print("Please supply a value for `--database_path`")
     # Checks if key files are present in each database and assigns the main
     # `input_args` Class the individual databases.
     # Should the database files not exist, as determined by `file_exists_list`,

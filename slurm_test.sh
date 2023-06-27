@@ -1,27 +1,51 @@
 #!/bin/bash
-#SBATCH --array=149,151,152,155,156,157,158,164,166,167,168,173,178,182,186,188,189,190,191,192,195,197,201,202,204,205,210,212,213,215,216,217,219,220,221,228,230,231,233,235,237,238,240,241,248,250,253,256,264,265,266,270,271,273,274,275,280,288,297,298,299,301,303,307,308,312,313,324,325,326,329,330,341,347,348,349,351,352,353,356,357,359,360,361,364,365,367,369,373,374,377,380,60,63,72,73%6
+#SBATCH --array=1-4%4
 #SBATCH --cpus-per-task=16
 #SBATCH --mem=120G
 #SBATCH --partition=parallel
 #SBATCH --time=8:00:00
 #SBATCH --job-name=fungiflow
-#SBATCH -o /nfs/scratch/styleske/fungiflow/fungiflow_%A_%a.log
+#SBATCH -o /nfs/scratch/campbel2/some_directory_name/fungiflow_%A_%a.log
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=kelly.styles@vuw.ac.nz
+
+
+"""
+This script will run the Fungiflow pipeline
+
+Setup:
+ - short reads
+    must be in fq.gz format, with the suffix `_1.fq.gz` for forward reads
+    and `_2.fq.gz` for reverse reads
+ - ONT reads
+    must be uncompressed and in a single fastq file
+ - reads must be prefixed with SLURM_ARRAY_TASK_ID value if running in parallel
+    i.e., if using `#SBATCH --array`
+
+Paramterers:
+ - `-a` is the array value that will be passed to the pipeline, and the files 
+    will use this as a prefix. Here I have used the SLURM_ARRAY_TASK_ID as the 
+    array value as then its easier to run multiple datasets in parallel. Both
+    short reads and ONT reads should then be prefixed with the array value, e.g.
+        1_1.fq.gz 1_2.fq.gz 1_ONT_reads.fastq 
+        2_1.fq.gz 2_2.fq.gz 2_ONT_reads.fastq 
+        ...
+    If you wanted to use a specific name instead of a number I can show you how. 
+    This can also be changed once everything is completed so its not biggie
+ - `-t` runs pipeline in isolate mode
+"""
+
 
 module load old-mod-system/Miniconda3/4.9.2
 module load singularity/3.7.3
 
 source activate fungiflow
 
-python3 /nfs/scratch/styleske/fungiflow/fungiflow.py \
--d "/nfs/scratch/styleske/endolichenic_fungi/all" \
+python3 /path/to/fungiflow/fungiflow.py \
+-d "path/to/directory/with/reads" \
 -a ${SLURM_ARRAY_TASK_ID} \
 -if ${SLURM_ARRAY_TASK_ID}_1.fq.gz \
 -ir ${SLURM_ARRAY_TASK_ID}_2.fq.gz \
--c ${SLURM_CPUS_PER_TASK} -m ${SLURM_MEM_PER_NODE} -ant -t "isolate" \
--s /nfs/scratch/styleske/singularity_files/fungiflow_v0-4_latest.sif \
--sf /nfs/scratch/styleske/singularity_files/funannotate_v0.1.sif \
--sa /nfs/scratch/styleske/singularity_files/antismash_6.0.1--pyhdfd78af_0.sif \
--data /nfs/scratch/styleske/databases/ \
--its -k -b -e
+--nanopore ${SLURM_ARRAY_TASK_ID}_ONT_reads.fastq \
+-c ${SLURM_CPUS_PER_TASK} -m ${SLURM_MEM_PER_NODE} -t "isolate" \
+-s /path/to/fungiflow_v3.sif

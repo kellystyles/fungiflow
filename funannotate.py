@@ -193,7 +193,7 @@ def funannotate_annotate(input_args,filenames,funannotate_path):
     if lib.file_exists(filenames.eggnog_annotations,"","") is True: 
         cmd = cmd + ["--eggnog",filenames.eggnog_annotations]
         try:
-            os.remove(funannotate_path, "annotate_misc", "eggnog.emapper.annotations")
+            os.remove(os.path.join(funannotate_path, "annotate_misc", "eggnog.emapper.annotations"))
         except FileNotFoundError:
             pass
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
