@@ -71,7 +71,7 @@ singularity pull library://styleske/fungiflow/funannotate:1.0.0     # funannotat
 singularity pull docker://antismash/standalone:6.1.1       			# antismash image (Official Docker image)
 ```
 
-The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` as follows:
+The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` (or `conda`) as follows:
 
 ```
 mamba create -n fungiflow python3
