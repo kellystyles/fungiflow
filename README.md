@@ -66,9 +66,9 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
-singularity pull library://kellystyles/fungiflow/fungiflow_v2.sif       # main pipeline image
-singularity pull library://kellystyles/fungiflow/funannotate_v2.sif     # funannotate image (Official Docker image + EggNOGG)
-singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
+singularity pull library://styleske/fungiflow/fungiflow:3.0.0       # main pipeline image
+singularity pull library://styleske/fungiflow/funannotate:1.0.0     # funannotate image (Official Docker image + EggNOGG)
+singularity pull docker://antismash/standalone:6.1.1       			# antismash image (Official Docker image)
 ```
 
 The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` as follows:
