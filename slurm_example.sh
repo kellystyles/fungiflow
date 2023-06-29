@@ -5,7 +5,7 @@
 #SBATCH --partition=parallel
 #SBATCH --time=8:00:00
 #SBATCH --job-name=fungiflow
-#SBATCH -o /nfs/scratch/campbel2/some_directory_name/fungiflow_%A_%a.log
+#SBATCH -o /output/path/fungiflow_%A_%a.log
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=kelly.styles@vuw.ac.nz
 
@@ -30,17 +30,26 @@ Paramterers:
         1_1.fq.gz 1_2.fq.gz 1_ONT_reads.fastq 
         2_1.fq.gz 2_2.fq.gz 2_ONT_reads.fastq 
         ...
-    If you wanted to use a specific name instead of a number I can show you how. 
+    If you wanted to use a specific name instead of a number, remove the 
+    `#SBATCH --array` shebang and uncomment the `SLURM_ARRAY_TASK_ID` and 
+    edit the text to the desired name. The input filename structure will still
+    need to follow the same naming convention as for an array run.
     This can also be changed once everything is completed so its not biggie
- - `-t` runs pipeline in isolate mode
+ - `-t` runs pipeline in `isolate` mode
 """
 
+# Uncomment if you want to use a name instead of a SLURM array number
+#SLURM_ARRAY_TASK_ID=name
 
-module load old-mod-system/Miniconda3/4.9.2
-module load singularity/3.7.3
+# load a conda and Singularity module
+module load Miniconda3
+module load singularity
 
+# activate the fungiflow conda environment
 source activate fungiflow
 
+# perform a minimal run (hybrid assembly only)
+# add other parameters as you like
 python3 /path/to/fungiflow/fungiflow.py \
 -d "path/to/directory/with/reads" \
 -a ${SLURM_ARRAY_TASK_ID} \

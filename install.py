@@ -37,9 +37,10 @@ def get_args():
                             help='Number of threads to use', type=str, required=True)
         parser.add_argument('-m', '--mem', action='store',
                             help='Amount of memory to use (in GB)', type=str, required=True)
-        parser.add_argument('-s', '--singularity_path', action='store',
-                            help='Path to Singularity container', type=str, required=False)                            
-     
+        parser.add_argument('-s', '--singularity_fungiflow', action='store',
+                            help='Path to Fungiflow Singularity container', type=str, required=False)                            
+        parser.add_argument('-sfun', '--singularity_funannotate', action='store',
+                            help='Path to Funannotate Singularity container', type=str, required=False)        
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
         exit(1)
@@ -64,11 +65,11 @@ def install_kraken2_db(input_args,database_path):
     cmd3 = ["kraken2-build","--clean","--threads",input_args.cpus,"--db",database_path]
     cmd4 = ["kraken2-build","----download-library","human","--no-masking","--threads",input_args.cpus,"--db",database_path]
     cmd5 = ["kraken2-build","----download-library","UniVec","--no-masking","--threads",input_args.cpus,"--db",database_path]
-    if len(input_args.singularity_path) > 0: cmd1 = input_args.singularity + cmd1
-    if len(input_args.singularity_path) > 0: cmd2 = input_args.singularity + cmd2
-    if len(input_args.singularity_path) > 0: cmd3 = input_args.singularity + cmd3
-    if len(input_args.singularity_path) > 0: cmd4 = input_args.singularity + cmd4
-    if len(input_args.singularity_path) > 0: cmd5 = input_args.singularity + cmd5
+    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
+    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
+    if len(input_args.singularity_fungiflow) > 0: cmd3 = input_args.singularity1 + cmd3
+    if len(input_args.singularity_fungiflow) > 0: cmd4 = input_args.singularity1 + cmd4
+    if len(input_args.singularity_fungiflow) > 0: cmd5 = input_args.singularity1 + cmd5
 
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -102,8 +103,8 @@ def install_ncbi_its(input_args):
     cmd1 = ["update_blastdb.pl","--passive","--decompress","ITS_RefSeq_Fungi"]
     cmd2 = ["update_blastdb.pl","taxdb"]
     cmd3 = ["tar","-xzf","taxdb.tar.gz"]
-    if len(input_args.singularity_path) > 0: cmd1 = input_args.singularity + cmd1
-    if len(input_args.singularity_path) > 0: cmd2 = input_args.singularity + cmd2
+    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
+    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
     print(" ".join(cmd1))
     print(" ".join(cmd2))
     print(" ".join(cmd3))
@@ -127,8 +128,8 @@ def install_ncbi_nt(input_args):
     cmd1 = ["update_blastdb.pl","--passive","--decompress","nt" ]
     cmd2 = ["update_blastdb.pl","taxdb"]
     cmd3 = ["tar","-xzf","taxdb.tar.gz"]
-    if len(input_args.singularity_path) > 0: cmd1 = input_args.singularity + cmd1
-    if len(input_args.singularity_path) > 0: cmd2 = input_args.singularity + cmd2
+    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
+    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
 
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -138,6 +139,28 @@ def install_ncbi_nt(input_args):
         lib.execute(cmd1,stdout,stderr)
         lib.execute(cmd2,stdout,stderr)
         lib.execute(cmd3,stdout,stderr)
+    except subprocess.CalledProcessError as e:
+        print(e.returncode)
+        print(e.output)
+
+def install_eggnog(input_args, database_path):
+    """
+    Downloads the EggNOG database.
+    """
+
+    stdout = "eggnog_db.out"
+    stderr = "eggnog_db.err"
+    
+    cmd1 = ["export", "EGGNOG_DATA_DIR=${database_path}"]
+    cmd2 = ["create_dbs.py", "-m", "diamond", "--dbname", "fungi", "--taxa", "Fungi"]
+    if len(input_args.singularity_funannotate) > 0: cmd1 = input_args.singularity2 + cmd1
+    if len(input_args.singularity_funannotate) > 0: cmd2 = input_args.singularity2 + cmd2
+    print(" ".join(cmd1))
+    print(" ".join(cmd2))
+
+    try:
+        lib.execute(cmd1,stdout,stderr)
+        lib.execute(cmd2,stdout,stderr)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -154,8 +177,10 @@ def main(input_args):
     lib.print_n(args)
     databases_path = os.path.join("databases")
 
-    if args.singularity_path > 0:
-        args.singularity = ["singularity", "exec", args.singularity_path]
+    if args.singularity_fungiflow > 0:
+        args.singularity1 = ["singularity", "exec", args.singularity_fungiflow]
+    if args.singularity_funannotate > 0:
+        args.singularity2 = ["singularity", "exec", args.singularity_funannotate]
 
     # need to check this code block to see if what dbs are printed with a given input
     dbs = ["kraken2","ncbi-its","ncbi-nt"]
@@ -170,12 +195,14 @@ def main(input_args):
         kraken2_time = datetime.datetime.now()
         print("Downloading and installing Kraken2 database...")
         kraken2_path = os.path.join(databases_path,"kraken2")
+        os.makedirs(kraken2_path)     
         install_kraken2_db(args,kraken2_path)
         lib.print_h(f"Kraken2 database installed in {datetime.datetime.now() - kraken2_time}")
     if "ncbi-its" in dbs:
         its_time = datetime.datetime.now()
         print("Downloading and installing NCBI-ITSrefseq database...")
         its_path = os.path.join(databases_path,"ncbi-its")
+        os.makedirs(its_path)        
         os.chdir(its_path)
         install_ncbi_its(args)
         lib.print_h(f"NCBI-ITSrefseq database installed in {datetime.datetime.now() - its_time}")
@@ -184,11 +211,20 @@ def main(input_args):
         nt_time = datetime.datetime.now()
         print("Downloading and installing NCBI-nt database...")
         nt_path = os.path.join(databases_path,"ncbi-nt")
+        os.makedirs(nt_path)
         os.chdir(nt_path)
         install_ncbi_nt(args)
         lib.print_h(f"NCBI-nt database installed in {datetime.datetime.now() - nt_time}")
         os.chdir("..")
-    
+    if "eggnog" in dbs:
+        eggnog_time = datetime.datetime.now()
+        print("Downloading and installing EggNOG database...")
+        eggnog_path = os.path.join(databases_path,"eggnog")
+        os.makedirs(eggnog_path)
+        os.chdir(eggnog_path)
+        install_eggnog(args, eggnog_path)
+        lib.print_h(f"NCBI-nt database intalled in {datetime.datetime.now() - eggnog_time}")
+        os.chdir("..")
     lib.check_databases(args)
 
     lib.print_h(f"All databases installed in {datetime.datetime.now() - start_time}")

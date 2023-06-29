@@ -97,6 +97,13 @@ def length_filter_fasta(input_args, filenames, trimmed_path):
     lib.execute(cmd, stdout, stderr)
 
 def short_map_2_long(input_args, filenames, trimmed_path):
+    """
+    This function maps short reads to long reads using ropebwt2 and FMLRC.
+
+    Inputs:     forward and reverse Illumina paired-end FASTQ reads and MinION
+                long reads.
+    Outputs:    NPY output map file
+    """
     stdout = os.path.join(trimmed_path, f"{input_args.array}_short_map_2_long.out")
     stderr = os.path.join(trimmed_path, f"{input_args.array}_short_map_2_long.err")
     # mapping short reads
@@ -321,8 +328,6 @@ def hybrid_polish(input_args, filenames, assembly_path):
     Inputs:    hybrid flye assembly FASTA file, Nanopore FASTA and Illumina FASTQ reads.
     Output:    polished assembly FASTA file.
     """
-    stdout = os.path.join(assembly_path, f"{input_args.array}_polish.out")
-    stderr = os.path.join(assembly_path, f"{input_args.array}_polish.err")
     
     # Polishing FLYE assembly
     if lib.file_exists(filenames.nanopore_sam, \
@@ -384,11 +389,11 @@ def main(input_args, filenames):
     trimmed_path = os.path.join(input_args.directory_new, "trimmed")
     lib.make_path(trimmed_path)
 
-    #?# if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
-    #filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
-    #if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
-     #   find_adapters(input_args, filenames, trimmed_path)
-      #  lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
+    # if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
+    filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
+    if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
+        find_adapters(input_args, filenames, trimmed_path)
+        lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
 
     filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
     filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")

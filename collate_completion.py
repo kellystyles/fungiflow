@@ -11,6 +11,7 @@ results file for each major step in the funannotate pipeline.
 
 Usage `python3 collate_completion.py target_directory`
 """
+
 print(f"Target directory : {sys.argv[1:]}")
 
 target_dir = sys.argv[1:]

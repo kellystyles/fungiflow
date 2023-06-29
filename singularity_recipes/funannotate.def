@@ -1,0 +1,24 @@
+Bootstrap: docker
+From: nextgenusfs/funannotate:v1.8.15
+
+%post
+    cat /etc/apt/sources.list
+    sed -i 's/$/ universe/' /etc/apt/sources.list
+    export LC_ALL=C
+    export LANG=C
+    apt update && apt install -y perl make cpanminus gcc dialog wget python3 libconfig-yaml-perl
+    python3 -m ensurepip --upgrade
+
+    # Perl modules installation
+    cpanm YAML Hash::Merge Logger::Simple Parallel::ForkManager
+
+    # EggNOG-mapper install
+    pip3 install eggnog-mapper
+
+%test
+    echo "Software versions:"
+    funannotate --version
+    emapper.py --version
+
+%help
+    Built from Docker Hub nextgenusfs/funannotate:v1.8.15

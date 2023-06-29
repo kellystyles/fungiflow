@@ -82,14 +82,22 @@ mamba deactivate
 
 ### GeneMark-ES gene predictions
 
-If you plan to use the optional Funannotate module, you'll need to obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality gene predictions for fungal assemblies, but it can't be bundled with the Fungiflow Singularity images due to licensing restrictions. The perl shebangs in the GeneMark-ES scripts will need to be altered to `/venv/bin/perl`. You can download GeneMark-ES from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi) and extract the license key `gm_key_64` to `~/` and change the perl shebangs using the following commands:
-
+If you plan to use the optional Funannotate module, you can optionally obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality *ab initio* gene predictions for eukaroytic assemblies.[^4] Due to licensing restrictions, it can't be bundled within the Fungiflow Funannotate Singularity image. 
+The perl shebangs in the GeneMark-ES scripts will need to be altered to `/venv/bin/perl`. 
+You can download GeneMark-ES from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi) and install it using the following commands:
+[^4]: Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O., & Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, 18(12), 1979-1990.
 ```
 # transfer key to home
 tar -xvzf gm_key_64.tar.gz -O gm_key & mv gm_key ~/.gm_key
 
+# install GeneMark-ES and add to PATH
+tar -xvzf gmes_linux_64_4.tar.gz
+mv gmes_linux_64_4/ gmes_linux_64
+export GENEMARK_PATH="/path/to/gmes_linux_64/" >> ~/.bashrc
+export PATH="/path/to/gmes_linux_64/":$PATH >> ~/.bashrc
+
 # change perl shebangs
-cd /venv/bin/gmes_linux_64/
+cd /path/to/gmes_linux_64/
 ./change_path_in_perl_scripts.pl /venv/bin/perl
 ```
 
@@ -330,35 +338,35 @@ optional arguments:
 Some usage cases are below:
 
 Basic usage: 
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir
+```
 Usage if you want to use a modifier for calculating very stringent trusted cutoffs: 
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.1`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.1
+```
 Usage if you want to use a modifier for calculating very relaxed trusted cutoffs:
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.9`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.9
+```
 Usage if you want to filter hits to list of required pHMM hits: 
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -r list_required_models`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -r list_required_models
+```
 Usage if you want to build pHMMs from multiple sequence alignments:
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -b`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -b
+```
 Usage if you want to align a multi-FASTA of proteins and build pHMMs from the multiple sequence alignments:
-
-    `python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -a -b`
-
+```
+python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -a -b
+```
 Inputs:
-
-    `--gbk_dir `  =   directory containing genbank files
-    `--phmm_dir`  =   directory containing pHMM files
-    `--required`  =   (optional) pHMMs that must be included in output clusters
-
+```
+--gbk_dir   =   directory containing genbank files
+--phmm_dir  =   directory containing pHMM files
+--required  =   (optional) pHMMs that must be included in output clusters
+```
 
 ### Planned implementations
 
