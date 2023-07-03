@@ -1,5 +1,7 @@
 <p align="center">
+
 ![header_logo](./figures/header.png)
+
 </p>
 
 ## Overview
