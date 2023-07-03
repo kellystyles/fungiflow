@@ -1,5 +1,5 @@
 <p align="center">
-![header_logo](./figures/header.svg)
+![header_logo](./figures/header.png)
 </p>
 
 ## Overview
