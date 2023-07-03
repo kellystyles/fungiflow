@@ -303,10 +303,8 @@ Usage is below, where `parent_directory` is a directory containing Fungiflow out
 ```
 Usage: python3 parse_all.py 'parent_directory'
 ```
-## cluster_search
-An accessory script, [cluster_search](https://github.com/kellystyles/cluster_search) can identify disparate BGCs that are separated across contigs in low-coverage/discontiguous genome assemblies. This works by searching the proteins from an assembly with gene predictions with user-supplied pHMMs. It can build a pHMM from a multiple alignment as well if necessary. It will apply a set of rules (user-supplied list of pHMMs that must have hits) and collate all hits within a 10 kb context into a GenBank file for each cluster. 
 
-### Planned implementations
+## Planned implementations
 
 - Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `MegaBLAST` in the blobplots package).
 - Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
