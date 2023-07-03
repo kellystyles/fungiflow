@@ -68,12 +68,21 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
+<<<<<<< HEAD
 singularity pull library://styleske/fungiflow/fungiflow                 # main fungiflow image
 singularity pull library://kellystyles/fungiflow/funannotate            # funannotate image (Official Docker image + EggNOGG)
 singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
 ```
 
 The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` or `conda` as follows:
+=======
+singularity pull library://styleske/fungiflow/fungiflow:3.0.0       # main pipeline image
+singularity pull library://styleske/fungiflow/funannotate:1.0.0     # funannotate image (Official Docker image + EggNOGG)
+singularity pull docker://antismash/standalone:6.1.1       			# antismash image (Official Docker image)
+```
+
+The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` (or `conda`) as follows:
+>>>>>>> 588b0a4780ab2f1cefcf4a74a87c56ac2abed75d
 
 ```
 mamba create -n fungiflow python3
@@ -358,4 +367,16 @@ Blobtools Module
 | Software    | Version | Reference                |
 |-------------|---------|--------------------------|
 | blobtools   | 1.1.1   | Laetsch & Blaxter, 2017. |
+<<<<<<< HEAD
 | ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.    |
+=======
+| ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.    |
+
+cluster_search
+
+| Software  | Version | Reference              |
+| --------- | :------ | ---------------------- |
+| pyhmmer   | 0.7.1   | Larralde, unpublished. |
+| muscle    | v5      | Edgar, 2021.           |
+| BioPython | 1.8     | Cock et al., 2009.     |
+>>>>>>> 588b0a4780ab2f1cefcf4a74a87c56ac2abed75d
