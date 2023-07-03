@@ -18,6 +18,7 @@ you can install a custom set of databases by adding a set of database strings to
     -kraken2    Installs the Kraken2 database for the main module (optional)
     -ncbi-nt    Installs the NCBI-nt database for the blobplot module (optional)
     -ncbi-its   Installs the NCBI-ITS-refseq database for the post_analysis module (optional)
+    -eggnog     Installs the EggNOG database for functional annotation (optional)
 
     To install only the kraken2 and ncbi-its databases, for example, use the following:
         `--databases "kraken2,ncbi-its"`
@@ -29,14 +30,14 @@ def get_args():
         parser = argparse.ArgumentParser(
             description="Fungiflow - the automated eukaryotic genomic pipeline for fungi.")
         parser.add_argument('-d', '--directory', action='store',
-                            help='Database directory path.', type=str, default="databases")  
+                            help='Database directory path.', type=str, default="databases", required=False)  
         parser.add_argument('-db', '--databases', action='store',
                             help='Databases to install. Accepted arguments are "all" or any combo of "kraken2", \
-                            "ncbi-its","ncbi-nt".', type=str, required=True)   
+                            "ncbi-its","ncbi-nt", or "eggnog.', type=str, default="all", required=False)   
         parser.add_argument('-c', '--cpus', action='store',
-                            help='Number of threads to use', type=str, required=True)
+                            help='Number of threads to use', type=str, default="4", required=False)
         parser.add_argument('-m', '--mem', action='store',
-                            help='Amount of memory to use (in GB)', type=str, required=True)
+                            help='Amount of memory to use (in GB)', type=str, default="8", required=False)
         parser.add_argument('-s', '--singularity_fungiflow', action='store',
                             help='Path to Fungiflow Singularity container', type=str, required=False)                            
         parser.add_argument('-sfun', '--singularity_funannotate', action='store',
@@ -60,7 +61,7 @@ def install_kraken2_db(input_args,database_path):
     stdout = "kraken2_db.out"
     stderr = "kraken2_db.err"
 
-    cmd1 = ["kraken2-build","--use-ftp","-i","--standard","--threads",input_args.cpus,"--db",database_path]
+    cmd1 = ["kraken2-build","--use-ftp","--standard","--threads",input_args.cpus,"--db",database_path]
     cmd2 = ["kraken2-build","--build","--threads",input_args.cpus,"--db",database_path]
     cmd3 = ["kraken2-build","--clean","--threads",input_args.cpus,"--db",database_path]
     cmd4 = ["kraken2-build","----download-library","human","--no-masking","--threads",input_args.cpus,"--db",database_path]
@@ -84,7 +85,6 @@ def install_kraken2_db(input_args,database_path):
         print(e.output)
         lib.execute(cmd4,stdout,stderr)
         lib.execute(cmd5,stdout,stderr)
-    
     try:
         lib.execute(cmd2,stdout,stderr)
         lib.execute(cmd3,stdout,stderr)
@@ -151,9 +151,8 @@ def install_eggnog(input_args, database_path):
     stdout = "eggnog_db.out"
     stderr = "eggnog_db.err"
     
-    cmd1 = ["export", "EGGNOG_DATA_DIR=${database_path}"]
+    cmd1 = ["export", f"EGGNOG_DATA_DIR={database_path}"]
     cmd2 = ["create_dbs.py", "-m", "diamond", "--dbname", "fungi", "--taxa", "Fungi"]
-    if len(input_args.singularity_funannotate) > 0: cmd1 = input_args.singularity2 + cmd1
     if len(input_args.singularity_funannotate) > 0: cmd2 = input_args.singularity2 + cmd2
     print(" ".join(cmd1))
     print(" ".join(cmd2))
@@ -165,10 +164,7 @@ def install_eggnog(input_args, database_path):
         print(e.returncode)
         print(e.output)
 
-def main(input_args):
-
-    if input_args is None:
-        input_args = get_args()
+def main():
 
     args = get_args()
     lib.print_tu("\n⁂⁂⁂⁂⁂⁂⁂⁂ Install Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂\n")
@@ -177,14 +173,14 @@ def main(input_args):
     lib.print_n(args)
     databases_path = os.path.join("databases")
 
-    if args.singularity_fungiflow > 0:
+    if len(args.singularity_fungiflow) > 0:
         args.singularity1 = ["singularity", "exec", args.singularity_fungiflow]
-    if args.singularity_funannotate > 0:
+    if len(args.singularity_funannotate) > 0:
         args.singularity2 = ["singularity", "exec", args.singularity_funannotate]
 
     # need to check this code block to see if what dbs are printed with a given input
-    dbs = ["kraken2","ncbi-its","ncbi-nt"]
-    if args.databases is not "all":
+    dbs = ["kraken2","ncbi-its","ncbi-nt","eggnog"]
+    if args.databases != "all":
         for i in args.databases:
             if i not in dbs:
                 lib.print_e(f"{i} is not a valid database option. Valid options are {dbs}")
@@ -206,7 +202,7 @@ def main(input_args):
         os.chdir(its_path)
         install_ncbi_its(args)
         lib.print_h(f"NCBI-ITSrefseq database installed in {datetime.datetime.now() - its_time}")
-        os.chdir("..")
+        os.chdir(args.directory)
     if "ncbi-nt" in dbs:
         nt_time = datetime.datetime.now()
         print("Downloading and installing NCBI-nt database...")
@@ -215,7 +211,7 @@ def main(input_args):
         os.chdir(nt_path)
         install_ncbi_nt(args)
         lib.print_h(f"NCBI-nt database installed in {datetime.datetime.now() - nt_time}")
-        os.chdir("..")
+        os.chdir(args.directory)
     if "eggnog" in dbs:
         eggnog_time = datetime.datetime.now()
         print("Downloading and installing EggNOG database...")
@@ -224,7 +220,7 @@ def main(input_args):
         os.chdir(eggnog_path)
         install_eggnog(args, eggnog_path)
         lib.print_h(f"NCBI-nt database intalled in {datetime.datetime.now() - eggnog_time}")
-        os.chdir("..")
+        os.chdir(args.directory)
     lib.check_databases(args)
 
     lib.print_h(f"All databases installed in {datetime.datetime.now() - start_time}")

@@ -1,4 +1,6 @@
-# Fungiflow
+<p align="center">
+![header_logo](./figures/header.svg)
+</p>
 
 ## Overview
 
@@ -41,7 +43,7 @@ The overall workflow is defined by several modules:
 
 Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs.
 
-> *There is an accessory script, `cluster_search_v3.py` that can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*. 
+> *[`cluster_search`](https://github.com/kellystyles/cluster_search) can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*. 
 
 These strains of interest can then be sequenced to a higher coverage using further short reads or MinION long reads and a more accurate and complete assembly prepared. 
 Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
@@ -66,12 +68,12 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
-singularity pull library://kellystyles/fungiflow/fungiflow_v2.sif       # main pipeline image
-singularity pull library://kellystyles/fungiflow/funannotate_v2.sif     # funannotate image (Official Docker image + EggNOGG)
+singularity pull library://styleske/fungiflow/fungiflow                 # main fungiflow image
+singularity pull library://kellystyles/fungiflow/funannotate            # funannotate image (Official Docker image + EggNOGG)
 singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
 ```
 
-The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` as follows:
+The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` or `conda` as follows:
 
 ```
 mamba create -n fungiflow python3
@@ -300,73 +302,7 @@ Usage is below, where `parent_directory` is a directory containing Fungiflow out
 Usage: python3 parse_all.py 'parent_directory'
 ```
 ## cluster_search
-An accessory script, `cluster_search_v3.py` can identify disparate BGCs that are separated across contigs in low-coverage/discontiguous genome assemblies. This works by searching the proteins from an assembly with gene predictions with user-supplied pHMMs. It can build a pHMM from a multiple alignment as well if necessary. It will apply a set of rules (user-supplied list of pHMMs that must have hits) and collate all hits within a 10 kb context into a GenBank file for each cluster. This script has the dependencies `pyhmmer` and `biopython` (>=1.8) and can be installed using mamba as below:
-```
-mamba create -n cluster_search python3
-source activate cluster_search
-mamba install -c conda-forge biopython
-mamba install -c bioconda pyhmmer
-mamba deactivate
-```
-### Usage
-This script has been tested on a PC with 12 × AMD Ryzen 5 5600X CPUs and 16 GB DDR3 RAM. It was able to search 5 fungal genomes in just under 10 seconds.
-```
-            |-|-|-|- Cluster Search -|-|-|-| 
-
-usage: cluster_search_v3.py [-h] -g GBK_DIR -p PHMM_DIR [-b] [-a] [-r REQUIRED] [-m TRUSTED_MODIFIER] [-t TRUSTED_CUTOFFS_FILE]
-
-Finds and extracts clusters of biosynthetic genes in an annotated genome using given pHMM models
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -g GBK_DIR, --gbk_dir GBK_DIR
-                        path to genbank file(s)
-  -p PHMM_DIR, --phmm_dir PHMM_DIR
-                        path to pHMMs
-  -b, --build           Build pHMM from multiple sequence alignments. Multiple sequence alignments must be 							in 'phmm_dir' and have suffix '.msa.fasta'
-  -a, --align           Align multi-FASTA to make multiple sequence alignments. multi-FASTA must be in 								'phmm_dir' and have suffix '.prots.fasta'
-  -r REQUIRED, --required REQUIRED
-                        comma-separated list of pHMMs required to be in the cluster, e.g., phmmA,phmmB,phmmC
-  -m TRUSTED_MODIFIER, --trusted_modifier TRUSTED_MODIFIER
-                       	modifier larger than 0 and including 1 for calculating trusted cutoff bitscores. 1 = 					   	 no cutoff, 0.1 = very stringent. Use 'd' to override existing data and     
-                        use defaults
-  -t TRUSTED_CUTOFFS_FILE, --trusted_cutoffs_file TRUSTED_CUTOFFS_FILE
-                        file containing tab-separated trusted cutoffs for each pHMM, e.g. 'phmmA bitscore'
-```
-> Note above that the varying input FASTA files for `--build` (`*.msa.fasta`) and `--align` (`*.prots.fasta`) will need to have an additional suffix to denote the type of data in each.
-
-Some usage cases are below:
-
-Basic usage: 
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir
-```
-Usage if you want to use a modifier for calculating very stringent trusted cutoffs: 
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.1
-```
-Usage if you want to use a modifier for calculating very relaxed trusted cutoffs:
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -m 0.9
-```
-Usage if you want to filter hits to list of required pHMM hits: 
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -r list_required_models
-```
-Usage if you want to build pHMMs from multiple sequence alignments:
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -b
-```
-Usage if you want to align a multi-FASTA of proteins and build pHMMs from the multiple sequence alignments:
-```
-python3 cluster_search_v3.py -g gbk_dir -p phmm_dir -a -b
-```
-Inputs:
-```
---gbk_dir   =   directory containing genbank files
---phmm_dir  =   directory containing pHMM files
---required  =   (optional) pHMMs that must be included in output clusters
-```
+An accessory script, [cluster_search](https://github.com/kellystyles/cluster_search) can identify disparate BGCs that are separated across contigs in low-coverage/discontiguous genome assemblies. This works by searching the proteins from an assembly with gene predictions with user-supplied pHMMs. It can build a pHMM from a multiple alignment as well if necessary. It will apply a set of rules (user-supplied list of pHMMs that must have hits) and collate all hits within a 10 kb context into a GenBank file for each cluster. 
 
 ### Planned implementations
 
@@ -423,11 +359,3 @@ Blobtools Module
 |-------------|---------|--------------------------|
 | blobtools   | 1.1.1   | Laetsch & Blaxter, 2017. |
 | ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.    |
-
-cluster_search
-
-| Software  | Version | Reference              |
-| --------- | :------ | ---------------------- |
-| pyhmmer   | 0.7.1   | Larralde, unpublished. |
-| muscle    | v5      | Edgar, 2021.           |
-| BioPython | 1.8     | Cock et al., 2009.     |
