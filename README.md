@@ -10,10 +10,6 @@
 
 A Python pipeline primarily designed for manipulating fungal low-coverage short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data and a post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
-[^1]: Blin, K., Shaw, S., Kloosterman, A. M., Charlop-Powers, Z., Van Wezel, G. P., Medema, M. H., & Weber, T. (2021). antiSMASH 6.0: improving cluster detection and comparison capabilities. *Nucleic acids research*, *49*(W1), W29-W35.
-[^2]: Palmer, J., & Stajich, J. (2021). Funannotate v1. 8.3: eukaryotic genome annotation (Version 1.8. 3). *Zenodo. doi*, *10*.
-[^3]: Laetsch, D. R., & Blaxter, M. L. (2017). BlobTools: Interrogation of genome assemblies. *F1000Research*, *6*(1287), 1287.
-
 ![Overview of fungiflow pipeline](./figures/map.png)
 
 ## Fungiflow pipeline
@@ -89,7 +85,7 @@ mamba deactivate
 If you plan to use the optional Funannotate module, you can optionally obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality *ab initio* gene predictions for eukaroytic assemblies.[^4] Due to licensing restrictions, it can't be bundled within the Fungiflow Funannotate Singularity image. 
 The perl shebangs in the GeneMark-ES scripts will need to be altered to `/venv/bin/perl`. 
 You can download GeneMark-ES from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi) and install it using the following commands:
-[^4]: Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O., & Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, 18(12), 1979-1990.
+
 ```
 # transfer key to home
 tar -xvzf gm_key_64.tar.gz -O gm_key & mv gm_key ~/.gm_key
@@ -308,7 +304,7 @@ Usage: python3 parse_all.py 'parent_directory'
 
 - Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `MegaBLAST` in the blobplots package).
 - Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
-- Whilst the repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
+- Whilst repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
 
 ## Known Bugs
 
@@ -320,43 +316,66 @@ Assembly Module
 
 | Software     | Version     | Reference                  |
 |--------------|-------------|----------------------------|
-| FastQC       | v0.11.9     | Andrews, 2010.             |
-| Trimmomatic  | v0.36       | Bolger et al., 2014.       |
-| Kraken2      | v2.1.2      | Wood et al., 2019.         |
-| SPADes       | v3.12.0     | Bankevich et al., 2012.    |
-| metaSPADes   | v3.12.0     | Nurk et al., 2017.         |
-| MaSuRCA      | v3.4.2      | Zimin et al., 2017.        |
-| Racon        | 1.4.3       | Vaser et al., 2017.        |
-| Minimap2     | 2.24-r1122  | Li, 2021.                  |
-| FMLRC        | 1.0.0       | Wang et al., 2018.         |
-| Flye         | 2.8.3-b1725 | Kolmogorov   et al., 2019. |
-| Porechop     | 0.2.4       | Wick, 2018.                |
-| BBTools      | 38.31       | Bushnell, 2014.            |
-| BWA-mem2     | 2.2.1       | Vasimuddin et al., 2019.   |
-| Samtools     | 1.16.1      | Danecek et al., 2021.      |
-| Polypolish   | 1.23        | Wick & Holt, 2022.         |
-| Medaka       | 1.4.3       | Wright et al., 2021.       |
+| FastQC       | v0.11.9     | Andrews, 2010.[^5]             |
+| Trimmomatic  | v0.36       | Bolger et al., 2014.[^6]       |
+| Kraken2      | v2.1.2      | Wood et al., 2019.[^7]         |
+| SPADes       | v3.12.0     | Bankevich et al., 2012.[^8]    |
+| metaSPADes   | v3.12.0     | Nurk et al., 2017.[^9]         |
+| MaSuRCA      | v3.4.2      | Zimin et al., 2017.[^10]        |
+| Racon        | 1.4.3       | Vaser et al., 2017.[^11]        |
+| Minimap2     | 2.24-r1122  | Li, 2021.[^12]                  |
+| FMLRC        | 1.0.0       | Wang et al., 2018.[^13]         |
+| Flye         | 2.8.3-b1725 | Kolmogorov   et al., 2019.[^14] |
+| Porechop     | 0.2.4       | Wick, 2018.[^15]                |
+| BBTools      | 38.31       | Bushnell, 2014.[^16]            |
+| BWA-mem2     | 2.2.1       | Vasimuddin et al., 2019.[^17]   |
+| Samtools     | 1.16.1      | Danecek et al., 2021.[^18]      |
+| Polypolish   | 1.23        | Wick & Holt, 2022.[^19]         |
+| Medaka       | 1.4.3       | Wright et al., 2021.[^20]       |
 
 Funannotate Module
 
 | Software    | Version  | Reference                      |
 |-------------|----------|--------------------------------|
-| funannotate | 1.83     | Palmer & Stajich, 2021.        |
-| GeneMark-ES | 4.71_lic | Ter-Hovhannisyan et al., 2008. |
+| funannotate | 1.83     | Palmer & Stajich, 2021.[^2]        |
+| GeneMark-ES | 4.71_lic | Ter-Hovhannisyan et al., 2008.[^4] |
 
 Post-analysis Module
 
 | Software    | Version   | Reference                     |
 |-------------|-----------|-------------------------------|
-| ITSx        | v1.1.2    | Bengtsson‐Palme et al., 2013. |
-| Quast       | v5.1.0rc1 | Gurevich et al., 2013.        |
-| antiSMASH   | 6.0.1     | Blin et al., 2021.            |
-| ncbi-BLAST+ | 2.13.0+   | Camacho et al., 2009.         |
+| ITSx        | v1.1.2    | Bengtsson-Palme et al., 2013.[^21] |
+| Quast       | v5.1.0rc1 | Gurevich et al., 2013.[^22]        |
+| antiSMASH   | 6.0.1     | Blin et al., 2021.[^1]            |
+| ncbi-BLAST+ | 2.13.0+   | Camacho et al., 2009.[^23]         |
 
 Blobtools Module
 
 | Software    | Version | Reference                |
 |-------------|---------|--------------------------|
-| blobtools   | 1.1.1   | Laetsch & Blaxter, 2017. |
-| ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.    |
+| blobtools   | 1.1.1   | Laetsch & Blaxter, 2017.[^3] |
+| ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.[^23]      |
 
+[^1]: Blin, K., Shaw, S., Kloosterman, A. M., Charlop-Powers, Z., Van Wezel, G. P., Medema, M. H., & Weber, T. (2021). antiSMASH 6.0: improving cluster detection and comparison capabilities. *Nucleic acids research*, *49*(W1), W29-W35.
+[^2]: Palmer, J., & Stajich, J. (2021). Funannotate v1. 8.3: eukaryotic genome annotation (Version 1.8. 3). *Zenodo. doi*, *10*.
+[^3]: Laetsch, D. R., & Blaxter, M. L. (2017). BlobTools: Interrogation of genome assemblies. *F1000Research*, *6*(1287), 1287.
+[^4]: Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O., & Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, 18(12), 1979-1990.
+[^5]: Andrews, S. (2010). FastQC: a quality control tool for high throughput sequence data. In: Babraham Bioinformatics, Babraham Institute, Cambridge, United Kingdom.
+[^6]: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics, 30(15), 2114-2120.  
+[^7]: Wood, D. E., Lu, J., & Langmead, B. (2019). Improved metagenomic analysis with Kraken 2. Genome biology, 20(1), 257.  
+[^8]: Bankevich, A., Nurk, S., Antipov, D., Gurevich, A. A., Dvorkin, M., Kulikov, A. S., Lesin, V. M., Nikolenko, S. I., Pham, S., & Prjibelski, A. D. (2012). SPAdes: a new genome assembly algorithm and its applications to single-cell sequencing. Journal of computational biology, 19(5), 455-477. 
+[^9]: Nurk, S., Meleshko, D., Korobeynikov, A., & Pevzner, P. A. (2017). metaSPAdes: a new versatile metagenomic assembler. Genome Research, 27(5), 824-834.
+[^10]: Zimin, A. V., Marçais, G., Puiu, D., Roberts, M., Salzberg, S. L., & Yorke, J. A. (2013). The MaSuRCA genome assembler. Bioinformatics, 29(21), 2669-2677.  
+[^11]: Vaser, R., Sović, I., Nagarajan, N., & Šikić, M. (2017). Fast and accurate de novo genome assembly from long uncorrected reads. Genome Research, 27(5), 737-746.  
+[^12]: Li, H. (2021). New strategies to improve minimap2 alignment accuracy. Bioinformatics, 37(23), 4572-4574. https://doi.org/10.1093/bioinformatics/btab705  
+[^13]: Wang, J. R., Holt, J., McMillan, L., & Jones, C. D. (2018). FMLRC: Hybrid long read error correction using an FM-index. BMC Bioinformatics, 19(1), 1-11.  
+[^14]: Kolmogorov, M., Yuan, J., Lin, Y., & Pevzner, P. A. (2019). Assembly of long, error-prone reads using repeat graphs. Nature Biotechnology, 37(5), 540-546.  
+[^15]: Wick, R. R. (2018). Porechop https://github.com/rrwick/Porechop 
+[^16]: Bushnell, B. (2014). BBTools software package. URL http://sourceforge. net/projects/bbmap, 578, 579.  
+[^17]: Vasimuddin, M., Misra, S., Li, H., & Aluru, S. (2019, 20-24 May 2019). Efficient Architecture-Aware Acceleration of BWA-MEM for Multicore Systems. 2019 IEEE International Parallel and Distributed Processing Symposium (IPDPS), 314-324. https://doi.org/10.1109/IPDPS.2019.00041
+[^18]: Danecek, P., Bonfield, J. K., Liddle, J., Marshall, J., Ohan, V., Pollard, M. O., Whitwham, A., Keane, T., McCarthy, S. A., Davies, R. M., & Li, H. (2021). Twelve years of SAMtools and BCFtools. Gigascience, 10(2). https://doi.org/10.1093/gigascience/giab008  
+[^19]: Wick, R. R., & Holt, K. E. (2022). Polypolish: Short-read polishing of long-read bacterial genome assemblies. PLOS Computational Biology, 18(1), e1009802. https://doi.org/10.1371/journal.pcbi.1009802  
+[^20]: Wright C, W. M. (2021). Medaka. https://github.com/nanoporetech/medaka  
+[^21]: Bengtsson-Palme, J., et al. (2013). Improved software detection and extraction of ITS1 and ITS2 from ribosomal ITS sequences of fungi and other eukaryotes for analysis of environmental sequencing data. Methods in Ecology and Evolution, 4(10), 914-919. https://doi.org/https://doi.org/10.1111/2041-210X.12073  
+[^22]: Gurevich, A., Saveliev, V., Vyahhi, N., & Tesler, G. (2013). QUAST: quality assessment tool for genome assemblies. Bioinformatics, 29(8), 1072-1075. 
+[^23]: Camacho, C., Coulouris, G., Avagyan, V., Ma, N., Papadopoulos, J., Bealer, K., & Madden, T. L. (2009). BLAST+: architecture and applications. BMC Bioinformatics, 10(1), 1-9.  
