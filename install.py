@@ -171,7 +171,7 @@ def main():
     start_time = datetime.datetime.now()
     os.chdir(args.directory)
     lib.print_n(args)
-    databases_path = os.path.join("databases")
+    databases_path = os.path.join(args.directory, "databases")
 
     if len(args.singularity_fungiflow) > 0:
         args.singularity1 = ["singularity", "exec", args.singularity_fungiflow]
@@ -202,7 +202,7 @@ def main():
         os.chdir(its_path)
         install_ncbi_its(args)
         lib.print_h(f"NCBI-ITSrefseq database installed in {datetime.datetime.now() - its_time}")
-        os.chdir(args.directory)
+        os.chdir(databases_path)
     if "ncbi-nt" in dbs:
         nt_time = datetime.datetime.now()
         print("Downloading and installing NCBI-nt database...")
@@ -211,7 +211,7 @@ def main():
         os.chdir(nt_path)
         install_ncbi_nt(args)
         lib.print_h(f"NCBI-nt database installed in {datetime.datetime.now() - nt_time}")
-        os.chdir(args.directory)
+        os.chdir(databases_path)
     if "eggnog" in dbs:
         eggnog_time = datetime.datetime.now()
         print("Downloading and installing EggNOG database...")
@@ -220,7 +220,7 @@ def main():
         os.chdir(eggnog_path)
         install_eggnog(args, eggnog_path)
         lib.print_h(f"NCBI-nt database intalled in {datetime.datetime.now() - eggnog_time}")
-        os.chdir(args.directory)
+        os.chdir(databases_path)
     lib.check_databases(args)
 
     lib.print_h(f"All databases installed in {datetime.datetime.now() - start_time}")

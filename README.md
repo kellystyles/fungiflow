@@ -105,11 +105,7 @@ You can provide the path to the GeneMark-ES binary using the `--genemark_path` p
 
 ### Databases
 
-To ensure the optional modules of Fungiflow work correctly, you need to install several databases. Run the `install.py` script to install them:
-
-```
-python3 install.py --help
-```
+To ensure the optional modules of Fungiflow work correctly, you need to install several databases. 
 
 All core databases are bundled within the Singularity containers, allowing you to run a basic setup out of the box. However, the following optional databases are quite large, so downloading them may take several hours with 4 CPUs:
 
@@ -117,7 +113,13 @@ All core databases are bundled within the Singularity containers, allowing you t
 - ITS_Refseq_Fungi database (162 Mb | 20 mins): required for BLASTn of extracted ITS sequences.
 - NCBI-nt database (132 GB | ~4 hours): required for assigning taxonomy to contigs for the Blobplots module.
 
-Note that the databases mentioned here might differ from the ones stated in the workflow, as they may be more up-to-date.
+*Note that the databases mentioned here might differ in size from the ones stated in the workflow, as they may be more up-to-date.*
+
+Run the `install.py` script to view and install available databases:
+
+```
+python3 install.py --help
+```
 
 ## Usage
 
