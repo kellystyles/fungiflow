@@ -85,7 +85,8 @@ def file_exists_list(file_list, success_message, error_message):
         d[i] = bool
     # if 'False' in the dict, print error message, else print success message,
     # returning the appropriate bool result
-    if False in d:
+    print(d)
+    if False in d.values():
         if len(error_message) > 1:
             print_e(error_message)
         return False
@@ -216,11 +217,11 @@ def check_databases(input_args):
     try: 
         if input_args.database_path is not None:
             if input_args.blobplot is True:
-                blob_db = os.path.join(input_args.database_path, "NCBI_nt", "nt")
+                blob_db = os.path.join(input_args.database_path, "ncbi-nt")
             if input_args.its is True:
-                its_db = os.path.join(input_args.database_path, "fungi_ITS", "ITS_RefSeq_Fungi")
+                its_db = os.path.join(input_args.database_path, "ncbi-its")
             if input_args.kraken2 is True:
-                kraken2_db = os.path.join(input_args.database_path, "kraken2_std")
+                kraken2_db = os.path.join(input_args.database_path, "kraken2")
             if input_args.eggnog is True:
                 eggnog_db = os.path.join(input_args.database_path, "eggnog")
         else:
@@ -250,8 +251,8 @@ def check_databases(input_args):
     # will add this database path to a list.
     c = []
     try:
-        ncbi_nt = os.path.join(input_args.database_path, "NCBI_nt", "nt.00.nhd")
-        taxdb = os.path.join(input_args.database_path, "NCBI_nt", "taxdb.bti")
+        ncbi_nt = os.path.join(blob_db, "nt.00.nhd")
+        taxdb = os.path.join(blob_db, "taxdb.bti")
         if file_exists_list([ncbi_nt, taxdb], "Blobplot DB is present", "Blobplot DB is not present. \
             Please supply a path via `--blobplot_db` or run install.py again.") is False:
             c.append(blob_db)            
@@ -261,8 +262,8 @@ def check_databases(input_args):
     except UnboundLocalError:
         pass
     try:
-        ncbi_its = os.path.join(input_args.database_path, "fungi_ITS", "ITS_RefSeq_Fungi.nsq")
-        taxdb = os.path.join(input_args.database_path, "fungi_ITS", "taxdb.bti")
+        ncbi_its = os.path.join(its_db, "ITS_RefSeq_Fungi.nsq")
+        taxdb = os.path.join(its_db, "taxdb.bti")
         if file_exists_list([ncbi_its, taxdb], "ITS DB is present", "ITS DB is not present. \
             Please supply a path via `--its_db` or run install.py again.") is False:
             c.append(its_db)
@@ -288,7 +289,8 @@ def check_databases(input_args):
         taxa = os.path.join(eggnog_db, "eggnog.taxa.db")
         main = os.path.join(eggnog_db, "eggnog.db")
         prots = os.path.join(eggnog_db, "e5.proteomes.faa")
-        if file_exists_list([dmnd, taxa, main, prots], "eggnog DB is present", "eggnog DB is not present. \
+        fungi_dmnd = os.path.join(eggnog_db, "fungi.dmnd")
+        if file_exists_list([dmnd, taxa, main, prots, fungi_dmnd], "eggnog DB is present", "eggnog DB is not present. \
             Please supply a path via `--eggnog_db` or run install.py again.") is False:
             c.append(eggnog_db)
         else:

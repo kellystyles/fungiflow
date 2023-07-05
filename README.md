@@ -109,9 +109,10 @@ To ensure the optional modules of Fungiflow work correctly, you need to install 
 
 All core databases are bundled within the Singularity containers, allowing you to run a basic setup out of the box. However, the following optional databases are quite large, so downloading them may take several hours with 4 CPUs:
 
-- Kraken2 standard database (213 GB | ~6 hours): required for taxonomic filtering of short reads.
-- ITS_Refseq_Fungi database (162 Mb | 20 mins): required for BLASTn of extracted ITS sequences.
-- NCBI-nt database (132 GB | ~4 hours): required for assigning taxonomy to contigs for the Blobplots module.
+- Kraken2 standard database (213 GB | 15 mins): required for taxonomic filtering of short reads in Assembly module.
+- ITS_Refseq_Fungi database (162 Mb | 30 mins): required for BLASTn of extracted ITS sequences in Post-anlaysis module.
+- NCBI-nt database (132 GB | ~6 hours): required for assigning taxonomy to contigs for the Blobplots module.
+- EggNOG database (19 GB | 1 hour): required for eggnog functional annotation in Funannotate module.
 
 *Note that the databases mentioned here might differ in size from the ones stated in the workflow, as they may be more up-to-date.*
 

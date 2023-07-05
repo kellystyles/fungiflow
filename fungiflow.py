@@ -53,13 +53,13 @@ def get_args():
         parser.add_argument('-b', '--blobplot', action='store_true', 
                             help='Run blobtools module on output assembly. \
                                 Part of blobtools module.')
-        parser.add_argument('-idb', '--its_db', action='store',
+        parser.add_argument('-idb', '--its_db', action='store', required=False,
                             help='Path to alternative ITS_refseq BLASTn database.', type=str)
-        parser.add_argument('-kdb', '--kraken2_db', action='store',
+        parser.add_argument('-kdb', '--kraken2_db', action='store', required=False,
                             help='Path to alternative Kraken2 standard database.', type=str)
-        parser.add_argument('-bdb', '--blob_db', action='store', 
+        parser.add_argument('-bdb', '--blob_db', action='store', required=False,
                             help='Path to alternative NCBI-nt database for blobtools.', type=str)
-        parser.add_argument('-edb', '--eggnog_db', action='store', 
+        parser.add_argument('-edb', '--eggnog_db', action='store', required=False, 
                             help='Path to alternative eggnog database for eggnog.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
                             help='Path to MinION reads.', type=str, required=False)
