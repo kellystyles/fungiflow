@@ -305,7 +305,7 @@ A script `parse_all.py` is provided which will collate various information from 
 
 Usage is below, where `parent_directory` is a directory containing Fungiflow output directories.
 ```
-Usage: python3 parse_all.py 'parent_directory'
+python3 parse_all.py 'parent_directory'
 ```
 
 ## Planned implementations
