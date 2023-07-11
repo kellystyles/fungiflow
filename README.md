@@ -6,9 +6,9 @@
 
 ## Overview
 
-> A repeatable workflow for identifying fungal biosynthetic gene clusters (BGCs) from low-coverage short read Illumina sequence data with minimal inputs. 
+> A repeatable workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
-A Python pipeline primarily designed for manipulating fungal low-coverage short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data and a post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
 ![Overview of fungiflow pipeline](./figures/map.png)
 
@@ -19,7 +19,7 @@ The overall workflow is defined by several modules:
     1. Trimming of short Illumina reads with Trimmomatic
     2. Trimming of long MinION reads with porechop
     3. Correction of trimmed MinION reads with FMLRC, using trimmed short reads
-    4. Filtering out non-eukaroytic contamination with Kraken2 (standard database | Oct 2020) - *OPTIONAL*
+    4. Filtering out non-eukaroytic contamination with Kraken2 (standard database - 16 GB preformatted) - *OPTIONAL*
     5. QC of trimmed and filtered reads with FastQC
     6. Assembly:
         - SPAdes for assembly with short Illumina sequence reads
@@ -39,13 +39,13 @@ The overall workflow is defined by several modules:
 
 ## Low-coverage genome assembly
 
-Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs.
+The original purpose of this workflow was to assemble low-coverage fungal Illumina sequence reads (~5×), but works better for higher coverage sequence reads (>15×). Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs.
 
 > *[`cluster_search`](https://github.com/kellystyles/cluster_search) can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*. 
 
-These strains of interest can then be sequenced to a higher coverage using further short reads or MinION long reads and a more accurate and complete assembly prepared. 
+Strains of interest could then be sequenced with a higher coverage using additional short reads or MinION long reads, and a more complete draft assembly prepared. 
 Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
-The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference.
+The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference assembly.
 ![Assembly metrics of differing coverage synthetic assemblies of 10 fungal strains](./figures/reference_metrics.png)
 
 ## Installation
@@ -105,11 +105,13 @@ You can provide the path to the GeneMark-ES binary using the `--genemark_path` p
 
 ### Databases
 
-To ensure the optional modules of Fungiflow work correctly, you need to install several databases. 
+All core databases are bundled within the Singularity containers, assembly and 
+antiSMASH BGC extraction, allowing you to run a basic setup out of the box.  
+However, several optional steps do require the installation databases to work 
+correctly. Some of these databases are quite large, so downloading them may take
+several hours:
 
-All core databases are bundled within the Singularity containers, allowing you to run a basic setup out of the box. However, the following optional databases are quite large, so downloading them may take several hours with 4 CPUs:
-
-- Kraken2 standard database (213 GB | 15 mins): required for taxonomic filtering of short reads in Assembly module.
+- Kraken2 standard database (16 GB | 1 hour): required for taxonomic filtering of short reads in Assembly module.
 - ITS_Refseq_Fungi database (162 Mb | 30 mins): required for BLASTn of extracted ITS sequences in Post-anlaysis module.
 - NCBI-nt database (132 GB | ~6 hours): required for assigning taxonomy to contigs for the Blobplots module.
 - EggNOG database (19 GB | 1 hour): required for eggnog functional annotation in Funannotate module.
@@ -117,9 +119,12 @@ All core databases are bundled within the Singularity containers, allowing you t
 *Note that the databases mentioned here might differ in size from the ones stated in the workflow, as they may be more up-to-date.*
 
 Run the `install.py` script to view and install available databases:
-
 ```
 python3 install.py --help
+```
+To install all the databases:
+```
+python3 install.py -d databases_path -db all -s fungiflow_sif -sfun funannotate_sif
 ```
 
 ## Usage
@@ -203,7 +208,7 @@ sbatch fungiflow_slurm.sh
 ```
 
 ### Speed
-This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to at least 100 Gb, as the entire hash table will need to be loaded into memory.
+This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to >16 Gb, as the entire hash table will need to be loaded into memory.
 The tests from the same synthetic read datasets run with 16 CPUs and 32 GB memory CPU and memory efficiency as below:
 ![Computational efficiency of differing coverage synthetic assemblies of 10 fungal strains](./figures/synthetic_tests.png)
 

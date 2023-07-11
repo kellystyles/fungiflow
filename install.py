@@ -3,6 +3,8 @@ import os
 import argparse
 import subprocess
 import datetime
+import requests
+import tarfile
 import library as lib
 
 """
@@ -13,7 +15,7 @@ The estimated time to download and prepare all the databases will take 2 days wi
 If you do not requre all the databases (e.g., no NCBI-nt because you don't want to use the blobplot module),
 you can install a custom set of databases by adding a set of database strings to the `--databases` parameter as below:
     -all        Installs all databases
-    -kraken2    Installs the Kraken2 database for the main module (optional)
+    -kraken2    Installs the standard Kraken2 database for the main module (optional)
     -ncbi-nt    Installs the NCBI-nt database for the blobplot module (optional)
     -ncbi-its   Installs the NCBI-ITS-refseq database for the post_analysis module (optional)
     -eggnog     Installs the EggNOG database for functional annotation (optional)
@@ -50,37 +52,45 @@ def get_args():
 
     return parser.parse_args()
 
-def install_kraken2_db(input_args,database_path):
+def download_file(url, save_path):
+    response = requests.get(url, stream=True)
+    response.raise_for_status()
+    
+    with open(save_path, 'wb') as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            file.write(chunk)
+
+def extract_tar_gz(file_path, extract_path):
+    with tarfile.open(file_path, 'r:gz') as tar:
+        tar.extractall(extract_path)
+
+def install_kraken2_db(database_path):
     """
     Downloads the Kraken2 standard database.
     Will first attempt to download the standard preformatted database (cmd1), else will attempt to download this same database library by library (cmds 4 & 5).
     The library will then be built and cleaned (cmds 2 & 3)
     """
 
-    stdout = "kraken2_db.out"
-    stderr = "kraken2_db.err"
+    # GitHub URL
+    url = 'https://github.com/BenLangmead/aws-indexes/blob/master/docs/k2.md'
 
-    cmd1 = ["kraken2-build","--use-ftp","--standard","--threads",input_args.cpus,"--db",database_path]
-    cmd2 = ["kraken2-build","--build","--threads",input_args.cpus,"--db",database_path]
-    cmd3 = ["kraken2-build","--clean","--threads",input_args.cpus,"--db",database_path]
-    cmd4 = ["kraken2-build","----download-library","human","--no-masking","--threads",input_args.cpus,"--db",database_path]
-    cmd5 = ["kraken2-build","----download-library","UniVec","--no-masking","--threads",input_args.cpus,"--db",database_path]
-    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
-    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
-    if len(input_args.singularity_fungiflow) > 0: cmd3 = input_args.singularity1 + cmd3
-    if len(input_args.singularity_fungiflow) > 0: cmd4 = input_args.singularity1 + cmd4
-    if len(input_args.singularity_fungiflow) > 0: cmd5 = input_args.singularity1 + cmd5
+    # Send a GET request to fetch the HTML content
+    response = requests.get(url)
+    html_content = response.text
+
+    # parse data and get links
+    parsed = html_content.split("\\")
+    stripped_list = [item.strip('"') for item in parsed]
+    links = []
+    for i in stripped_list:
+        if "k2_standard_16" in i:
+            links.append(i)
+    latest = links[0]
+    latest_output = latest.split("/")[-1]
 
     try:
-        lib.execute(cmd1,stdout,stderr)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
-        lib.execute(cmd4,stdout,stderr)
-        lib.execute(cmd5,stdout,stderr)
-    try:
-        lib.execute(cmd2,stdout,stderr)
-        lib.execute(cmd3,stdout,stderr)
+        download_file(latest, latest_output)
+        extract_tar_gz(latest_output, database_path)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -95,14 +105,13 @@ def install_ncbi_its(input_args):
     
     cmd1 = ["update_blastdb.pl","--passive","--decompress","ITS_RefSeq_Fungi"]
     cmd2 = ["update_blastdb.pl","taxdb"]
-    cmd3 = ["tar","-xzf","taxdb.tar.gz"]
     if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
     if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
 
     try:
         lib.execute(cmd1,stdout,stderr)
         lib.execute(cmd2,stdout,stderr)
-        lib.execute(cmd3,stdout,stderr)
+        extract_tar_gz("taxdb.tar.gz", ".")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -220,18 +229,24 @@ def check_databases(input_databases, databases_path):
 
 def main():
 
+    # get arguments
     args = get_args()
     lib.print_t("\n⁂⁂⁂⁂⁂⁂⁂⁂ Install Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂\n")
     start_time = datetime.datetime.now()
-    os.chdir(args.directory)
-    #print(args)
-    databases_path = os.path.abspath(os.path.join(args.directory, "databases"))
-    print(f"Database path: {databases_path}")
 
-    if len(args.singularity_fungiflow) > 0:
-        args.singularity1 = ["singularity", "exec", args.singularity_fungiflow]
-    if len(args.singularity_funannotate) > 0:
-        args.singularity2 = ["singularity", "exec", args.singularity_funannotate]
+    # define the singularity container paths
+    if args.singularity_fungiflow is not None:
+        args.singularity1 = ["singularity", "exec", os.path.abspath(os.path.join(args.singularity_fungiflow))]
+    if args.singularity_funannotate is not None:
+        args.singularity2 = ["singularity", "exec", os.path.abspath(os.path.join(args.singularity_funannotate))]
+
+    # create/move to the databases directory
+    if not os.path.exists(args.directory):
+        os.makedirs(args.directory)
+    #print(args)
+    databases_path = os.path.abspath(os.path.join(args.directory))
+    print(f"Database path: {databases_path}")
+    os.chdir(databases_path)
 
     # need to check this code block to see if what dbs are printed with a given input
     dbs = ["kraken2","ncbi-its","ncbi-nt","eggnog"]
@@ -270,7 +285,7 @@ def main():
         print("Downloading and installing kraken2 database...")
         if not os.path.exists(kraken2_path):
             os.makedirs(kraken2_path)    
-        install_kraken2_db(args,kraken2_path)
+        install_kraken2_db(kraken2_path)
         lib.print_h(f"kraken2 database installed in {datetime.datetime.now() - kraken2_time}")
     if "ncbi-its" in dbs and "ncbi-its" in failed:
         its_time = datetime.datetime.now()
