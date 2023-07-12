@@ -6,7 +6,7 @@
 
 ## Overview
 
-> A repeatable workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
+> A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
 A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
@@ -66,8 +66,8 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
-singularity pull library://styleske/fungiflow/fungiflow                 # main fungiflow image
-singularity pull library://kellystyles/fungiflow/funannotate            # funannotate image (Official Docker image + EggNOGG)
+singularity pull library://styleske/fungiflow/fungiflow:3.0.0                 # main fungiflow image
+singularity pull library://kellystyles/fungiflow/funannotate:1.0.0            # funannotate image (Official Docker image + EggNOGG)
 singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
 ```
 
