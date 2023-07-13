@@ -46,7 +46,9 @@ The original purpose of this workflow was to assemble low-coverage fungal Illumi
 Strains of interest could then be sequenced with a higher coverage using additional short reads or MinION long reads, and a more complete draft assembly prepared. 
 Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
 The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference assembly.
+<p align="center">
 ![Assembly metrics of differing coverage synthetic assemblies of 10 fungal strains](./figures/reference_metrics.png)
+</p>
 
 ## Installation
 
@@ -210,7 +212,9 @@ sbatch fungiflow_slurm.sh
 ### Speed
 This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to >16 Gb, as the entire hash table will need to be loaded into memory.
 The tests from the same synthetic read datasets run with 16 CPUs and 32 GB memory CPU and memory efficiency as below:
+<p align="center">
 ![Computational efficiency of differing coverage synthetic assemblies of 10 fungal strains](./figures/synthetic_tests.png)
+</p>
 
 ## Output
 ### File tree
