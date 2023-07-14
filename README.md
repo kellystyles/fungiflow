@@ -6,11 +6,15 @@
 
 ## Overview
 
-> A repeatable workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
+> A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
 A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
+<p align="center">
+
 ![Overview of fungiflow pipeline](./figures/map.png)
+
+</p>
 
 ## Fungiflow pipeline
 
@@ -46,7 +50,12 @@ The original purpose of this workflow was to assemble low-coverage fungal Illumi
 Strains of interest could then be sequenced with a higher coverage using additional short reads or MinION long reads, and a more complete draft assembly prepared. 
 Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
 The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference assembly.
+
+<p align="center">
+    
 ![Assembly metrics of differing coverage synthetic assemblies of 10 fungal strains](./figures/reference_metrics.png)
+
+</p>
 
 ## Installation
 
@@ -66,8 +75,8 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
-singularity pull library://styleske/fungiflow/fungiflow                 # main fungiflow image
-singularity pull library://kellystyles/fungiflow/funannotate            # funannotate image (Official Docker image + EggNOGG)
+singularity pull library://styleske/fungiflow/fungiflow:3.0.0                 # main fungiflow image
+singularity pull library://kellystyles/fungiflow/funannotate:1.0.0            # funannotate image (Official Docker image + EggNOGG)
 singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
 ```
 
@@ -210,7 +219,12 @@ sbatch fungiflow_slurm.sh
 ### Speed
 This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to >16 Gb, as the entire hash table will need to be loaded into memory.
 The tests from the same synthetic read datasets run with 16 CPUs and 32 GB memory CPU and memory efficiency as below:
+
+<p align="center">
+    
 ![Computational efficiency of differing coverage synthetic assemblies of 10 fungal strains](./figures/synthetic_tests.png)
+
+</p>
 
 ## Output
 ### File tree
