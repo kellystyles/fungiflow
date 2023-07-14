@@ -3,8 +3,6 @@ import os
 import argparse
 import subprocess
 import datetime
-import requests
-import tarfile
 import library as lib
 
 """
@@ -52,18 +50,6 @@ def get_args():
 
     return parser.parse_args()
 
-def download_file(url, save_path):
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    
-    with open(save_path, 'wb') as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
-
-def extract_tar_gz(file_path, extract_path):
-    with tarfile.open(file_path, 'r:gz') as tar:
-        tar.extractall(extract_path)
-
 def install_kraken2_db(database_path):
     """
     Downloads the Kraken2 standard database.
@@ -89,8 +75,8 @@ def install_kraken2_db(database_path):
     latest_output = latest.split("/")[-1]
 
     try:
-        download_file(latest, latest_output)
-        extract_tar_gz(latest_output, database_path)
+        lib.download_file(latest, latest_output)
+        lib.extract_tar_gz(latest_output, database_path)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)

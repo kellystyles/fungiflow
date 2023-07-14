@@ -2,6 +2,9 @@ import os
 import sys
 import subprocess
 import datetime
+import requests
+import tarfile
+import tqdm
 
 """
 Helper functions for the Fungiflow pipeline.
@@ -183,6 +186,52 @@ def execute_shell(command_list, stdout, stderr):
         print(e.returncode)
         print(e.output)   
         print(sys.exc_info()[1])     
+
+def download_file(url, save_path):
+    """
+    Downloads file and displays progress bar. 
+    Will check if file is partially downloaded and will resume from last chunk.
+    Ensure 'url' and 'save_path' are housed by commas.
+    """
+
+    response = None
+    total_size = 0
+    block_size = 8192  # Default chunk size
+    downloaded_size = 0
+
+    if os.path.exists(save_path):
+        # Get the size of the existing file
+        downloaded_size = os.path.getsize(save_path)
+        headers = {"Range": f"bytes={downloaded_size}-"}
+        response = requests.get(url, headers=headers, stream=True)
+        response.raise_for_status()
+        total_size = int(response.headers.get("content-length")) + downloaded_size
+        mode = "ab"  # Append to existing file
+    else:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+        total_size = int(response.headers.get("content-length"))
+        mode = "wb"  # Create new file
+
+    with open(save_path, mode) as file, tqdm(
+        total=total_size, initial=downloaded_size, unit="B", unit_scale=True, desc=save_path
+    ) as pbar:
+        for chunk in response.iter_content(chunk_size=block_size):
+            file.write(chunk)
+            pbar.update(len(chunk))
+
+    # Check if the downloaded file matches the expected size
+    downloaded_size = os.path.getsize(save_path)
+    if downloaded_size != total_size:
+        raise ValueError("Downloaded file size doesn't match the expected size.")
+
+def extract_tar_gz(file_path, extract_path):
+    """
+    Extracts a tar.gz file to a given path.
+    """
+    
+    with tarfile.open(file_path, 'r:gz') as tar:
+        tar.extractall(extract_path)
 
 def pickling(input_args, filenames):
     """
