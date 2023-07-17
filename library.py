@@ -265,8 +265,6 @@ def check_databases(input_args):
     # the supplied individual database paths will be used
     try: 
         if input_args.database_path is not None:
-            if input_args.blobplot is True:
-                blob_db = os.path.join(input_args.database_path, "ncbi-nt")
             if input_args.its is True:
                 its_db = os.path.join(input_args.database_path, "ncbi-its")
             if input_args.kraken2 is True:
@@ -274,10 +272,6 @@ def check_databases(input_args):
             if input_args.eggnog is True:
                 eggnog_db = os.path.join(input_args.database_path, "eggnog")
         else:
-            try:
-                blob_db = input_args.blobplot_db
-            except AttributeError:
-                pass
             try:
                 its_db = input_args.its_db
             except AttributeError:
@@ -299,17 +293,6 @@ def check_databases(input_args):
     # Should the database files not exist, as determined by `file_exists_list`,
     # will add this database path to a list.
     c = []
-    try:
-        ncbi_nt = os.path.join(blob_db, "nt.00.nhd")
-        taxdb = os.path.join(blob_db, "taxdb.bti")
-        if file_exists_list([ncbi_nt, taxdb], "Blobplot DB is present", "Blobplot DB is not present. \
-            Please supply a path via `--blobplot_db` or run install.py again.") is False:
-            c.append(blob_db)            
-        else:
-            input_args.blobplot_db = blob_db
-        print(blob_db)
-    except UnboundLocalError:
-        pass
     try:
         ncbi_its = os.path.join(its_db, "ITS_RefSeq_Fungi.nsq")
         taxdb = os.path.join(its_db, "taxdb.bti")

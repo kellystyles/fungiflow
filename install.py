@@ -14,7 +14,6 @@ If you do not requre all the databases (e.g., no NCBI-nt because you don't want 
 you can install a custom set of databases by adding a set of database strings to the `--databases` parameter as below:
     -all        Installs all databases
     -kraken2    Installs the standard Kraken2 database for the main module (optional)
-    -ncbi-nt    Installs the NCBI-nt database for the blobplot module (optional)
     -ncbi-its   Installs the NCBI-ITS-refseq database for the post_analysis module (optional)
     -eggnog     Installs the EggNOG database for functional annotation (optional)
 
@@ -32,7 +31,7 @@ def get_args():
                             help='Database directory path.', type=str, default="databases", required=False)  
         parser.add_argument('-db', '--databases', action='store',
                             help='Databases to install. Accepted arguments are "all" or any combo of "kraken2", \
-                            "ncbi-its","ncbi-nt", or "eggnog.', type=str, default="all", required=False)   
+                            "ncbi-its", or "eggnog".', type=str, default="all", required=False)   
         parser.add_argument('-c', '--cpus', action='store',
                             help='Number of threads to use', type=str, default="4", required=False)
         parser.add_argument('-m', '--mem', action='store',
@@ -102,28 +101,6 @@ def install_ncbi_its(input_args):
         print(e.returncode)
         print(e.output)
 
-def install_ncbi_nt(input_args):
-    """
-    Downloads the NCBI nt preformatted BLASTn database.
-    """
-
-    stdout = "ncbi-nt_db.out"
-    stderr = "ncbi-nt_db.err"
-    
-    cmd1 = ["update_blastdb.pl","--passive","--decompress","nt" ]
-    cmd2 = ["update_blastdb.pl","taxdb"]
-    cmd3 = ["tar","-xzf","taxdb.tar.gz"]
-    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
-    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
-
-    try:
-        lib.execute(cmd1,stdout,stderr)
-        lib.execute(cmd2,stdout,stderr)
-        lib.execute(cmd3,stdout,stderr)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
-
 def install_eggnog(input_args, database_path):
     """
     Downloads the EggNOG database.
@@ -159,20 +136,8 @@ def check_databases(input_databases, databases_path):
     # define database paths
     kraken2_path = os.path.join(databases_path,"kraken2")
     its_path = os.path.join(databases_path,"ncbi-its")
-    nt_path = os.path.join(databases_path,"ncbi-nt")    
     eggnog_path = os.path.join(databases_path,"eggnog")
 
-    try:
-        if "ncbi-nt" in input_databases:
-            ncbi_nt = os.path.join(nt_path, "nt.00.nhd")
-            taxdb = os.path.join(nt_path, "taxdb.bti")
-            if lib.file_exists_list([ncbi_nt, taxdb], "", "") is False:
-                failed.append("ncbi-nt")    
-            elif lib.file_exists_list([ncbi_nt, taxdb], "", "") is True:
-                passed.append("ncbi-nt")        
-                #print(nt_path)
-    except UnboundLocalError:
-        pass
     try:
         if "ncbi-its" in input_databases:
             ncbi_its = os.path.join(its_path, "ITS_RefSeq_Fungi.nsq")
@@ -235,7 +200,7 @@ def main():
     os.chdir(databases_path)
 
     # need to check this code block to see if what dbs are printed with a given input
-    dbs = ["kraken2","ncbi-its","ncbi-nt","eggnog"]
+    dbs = ["kraken2","ncbi-its","eggnog"]
     if args.databases != "all":
         input_databases = args.databases.split(',')
         for i in input_databases:
@@ -249,7 +214,6 @@ def main():
     # define database paths
     kraken2_path = os.path.join(databases_path,"kraken2")
     its_path = os.path.join(databases_path,"ncbi-its")
-    nt_path = os.path.join(databases_path,"ncbi-nt")    
     eggnog_path = os.path.join(databases_path,"eggnog")
 
     # check what databases exist
@@ -281,15 +245,6 @@ def main():
         os.chdir(its_path)
         install_ncbi_its(args)
         lib.print_h(f"ncbi-its database installed in {datetime.datetime.now() - its_time}")
-        os.chdir(databases_path)
-    if "ncbi-nt" in dbs and "ncbi-nt" in failed:
-        nt_time = datetime.datetime.now()
-        print("Downloading and installing ncbi-nt database...")
-        if not os.path.exists(nt_path):
-            os.makedirs(nt_path) 
-        os.chdir(nt_path)
-        install_ncbi_nt(args)
-        lib.print_h(f"ncbi-nt database installed in {datetime.datetime.now() - nt_time}")
         os.chdir(databases_path)
     if "eggnog" in dbs and "eggnog" in failed:
         eggnog_time = datetime.datetime.now()

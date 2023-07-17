@@ -7,7 +7,6 @@
 #SBATCH --job-name=fungiflow
 #SBATCH -o /output/path/fungiflow_%A_%a.log
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=kelly.styles@vuw.ac.nz
 
 
 """

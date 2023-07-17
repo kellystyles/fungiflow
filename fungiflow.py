@@ -4,7 +4,7 @@ import sys
 import argparse
 import datetime
 import library as lib
-import assembly, blobplot, funannotate, post_analysis
+import assembly, funannotate, post_analysis
 
 """
 Main script of the Fungiflow pipeline.
@@ -50,15 +50,10 @@ def get_args():
         parser.add_argument('-e', '--eggnog', action='store_true',
                             help='Functionally annotate the assembly proteins with eggnog. \
                                 Part of annotation module.')
-        parser.add_argument('-b', '--blobplot', action='store_true', 
-                            help='Run blobtools module on output assembly. \
-                                Part of blobtools module.')
         parser.add_argument('-idb', '--its_db', action='store', required=False,
                             help='Path to alternative ITS_refseq BLASTn database.', type=str)
         parser.add_argument('-kdb', '--kraken2_db', action='store', required=False,
                             help='Path to alternative Kraken2 standard database.', type=str)
-        parser.add_argument('-bdb', '--blob_db', action='store', required=False,
-                            help='Path to alternative NCBI-nt database for blobtools.', type=str)
         parser.add_argument('-edb', '--eggnog_db', action='store', required=False, 
                             help='Path to alternative eggnog database for eggnog.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
@@ -117,10 +112,6 @@ def main():
     # Running 'POST_ANALYSIS' module
     post_analysis.main(input_args, filenames)
 
-    # Running 'BLOBPLOT' module
-    if input_args.blobplot is True:
-        blobplot.main(input_args, filenames)
-
     lib.print_h(f"Results saved to {filenames.results_csv}")
     lib.print_h("Output files and variables are listed below:")
     filenames.printer()
@@ -147,7 +138,6 @@ def main():
         post = "Assemblies were evaluated with Quast."
         if input_args.its is True: post = post + "ITS regions were extracted using ITSx."
         if input_args.antismash is True: post = post + "BGCs were predicted using antiSMASH."
-        if input_args.blobplot is True: post = post + "Blobplots were prepared using blobtools."
         print(f"{trimming} {assembly_proc} {annotation} {post}")
 
 if __name__ == '__main__':
