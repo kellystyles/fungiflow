@@ -20,34 +20,34 @@ def get_args():
         parser.add_argument('-d', '--directory', action='store',
                             help='Working directory path.', type=str, required=True)     
         parser.add_argument('-if', '--illumina_f', action='store',
-                            help='Illumina short forward reads path', type=str, required=True)
+                            help='Illumina short forward reads path', type=str, required=False)
         parser.add_argument('-ir', '--illumina_r', action='store',
-                            help='Illumina short reverse reads path', type=str, required=True)
+                            help='Illumina short reverse reads path', type=str, required=False)
         parser.add_argument('-a', '--array', action='store',
                             help='a unique value', type=str, required=True)
         parser.add_argument('-c', '--cpus', action='store',
                             help='Number of threads to use', type=str, required=True)
         parser.add_argument('-m', '--mem', action='store',
                             help='Amount of memory to use (in GB)', type=str, required=True)
-        parser.add_argument('-ant', '--antismash', action='store_true',
+        parser.add_argument('-ant', '--antismash', action='store_true', required=False,
                             help='Add this argument if you would like to search the assembly for BGCs')
-        parser.add_argument('-f', '--funannotate', action='store_true',
+        parser.add_argument('-f', '--funannotate', action='store_true', required=False,
                             help='Add this argument if you would like to annotate the assembly')
-        parser.add_argument('-s', '--singularity_image', action='store',
+        parser.add_argument('-s', '--singularity_image', action='store', required=False,
                             help='Primary Singularity image for Fungiflow', type=str)
-        parser.add_argument('-data', '--database_path', action='store',
+        parser.add_argument('-data', '--database_path', action='store', required=False,
                             help='Path to installed databases', type=str)
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
                             help='Singularity image for Funannotate', type=str, required=False)
         parser.add_argument('-sa', '--singularity_antismash', action='store',
                             help='Singularity image for antiSMASH', type=str, required=False)
-        parser.add_argument('-its', '--its', action='store_true',
+        parser.add_argument('-its', '--its', action='store_true', required=False,
                             help='Search assembly for ITS sequences. Part of post-analysis module.')
-        parser.add_argument('-k', '--kraken2', action='store_true',
+        parser.add_argument('-k', '--kraken2', action='store_true', required=False,
                             help='Run trimmed reads against Kraken2 standard database. \
                                 Will save unclassified reads (i.e., not matching the standard database), \
                                     which will be used for assembly. Part of taxonomic module.')
-        parser.add_argument('-e', '--eggnog', action='store_true',
+        parser.add_argument('-e', '--eggnog', action='store_true', required=False,
                             help='Functionally annotate the assembly proteins with eggnog. \
                                 Part of annotation module.')
         parser.add_argument('-idb', '--its_db', action='store', required=False,
@@ -58,20 +58,20 @@ def get_args():
                             help='Path to alternative eggnog database for eggnog.', type=str)
         parser.add_argument('-n', '--nanopore', action='store',
                             help='Path to MinION reads.', type=str, required=False)
-        parser.add_argument('-t', '--type', action='store', default="isolate", 
+        parser.add_argument('-t', '--type', action='store', default="isolate", required=False, 
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])
         parser.add_argument('-minlen', '--minimum_length', action='store', default="2000", 
                             help='Minimum length of long-reads to retain during QC processes. \
-                                Default is 2000 bp.', type=str)
+                                Default is 2000 bp.', type=str, required=False)
         parser.add_argument('-mtm', '--min_training_models', action='store', default="200", 
                             help='Mininum number of predicted models to train Augustus. \
-                                Default is 200.', type=str)
-        parser.add_argument('--careful', action='store_true',
+                                Default is 200.', type=str, required=False)
+        parser.add_argument('--careful', action='store_true', required=False,
                             help='Assembles reads with SPAdes using lower k-mer values and runs in single cell mode.')
         parser.add_argument('--genemark_path', action='store', default=None,
-                            help='Path to GeneMark-ES script.', type=str)
-        parser.add_argument('--print_workflow', action='store_true', default="False", 
+                            help='Path to GeneMark-ES script.', type=str, required=False)
+        parser.add_argument('--print_workflow', action='store_true', default="False", required=False, 
                             help='Will print a summary of the workflow upon completion of the script')                                                        
 
     except argparse.ArgumentError:

@@ -205,7 +205,6 @@ def assembly_short(input_args, filenames, assembly_path):
     lib.file_exists_exit(filenames.assembly_fasta, \
         "Short reads successfully assembled with SPADes", "SPADes assembly failed... check the logs and your inputs")
 
-
 def assembly_hybrid(input_args, filenames, assembly_path):
     """
     Performs a hybrid assembly using `flye` assembler.
@@ -316,12 +315,14 @@ def polypolish(input_args, filenames, assembly_path):
     lib.file_exists(filenames.polypolish_consensus, \
         f"Polishing {filenames.medaka_consensus} with polypolish was successful", f"Polishing {filenames.medaka_consensus} with polypolish failed")    
 
-def hybrid_polish(input_args, filenames, assembly_path):
+def polish(input_args, filenames, assembly_path):
     """
     Polishes hybrid assemblies as follows:
     1. map trimmed/length-filtered long reads to assembly with `minimap2`
     2. one round of polishing using `racon`
     3. one round of polishing using `medaka`
+    
+    If short reads also supplied:
     4. map short trimmed/taxa-filtered short reads to medaka consensus assembly
     5. one round of polishing using `polypolish`
     
@@ -339,18 +340,22 @@ def hybrid_polish(input_args, filenames, assembly_path):
     if lib.file_exists(filenames.medaka_consensus, \
         "medaka consensus assembly already exists, Skipping...", f"Polishing {filenames.racon_consensus} with medaka") == False:
         medaka(input_args, filenames, assembly_path)
-    if lib.file_exists(filenames.medaka_consensus_sam, \
-        f"{filenames.medaka_consensus_sam} already exists. Skipping...", f"Mapping {filenames.trimmedf} & {filenames.trimmedr} to {filenames.medaka_consensus} with minimap2...") == False:
-        minimap2(input_args, filenames, assembly_path, "short")
-    if lib.file_exists(filenames.medaka_sorted_sam, \
-        f"{filenames.medaka_sorted_sam} already exists. Skipping...", f"Sorting {filenames.medaka_consensus_sam} with samtools...") == False:
-        samtools_sort(input_args, filenames, assembly_path)
-   # if lib.file_exists(filenames.assembly_sorted_index, \
-    #    f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
-     #   samtools_index(input_args, filenames, assembly_path)
-    if lib.file_exists(filenames.polypolish_consensus, \
-        f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
-        polypolish(input_args, filenames, assembly_path)
+    
+    # will perform hybrid polishing steps by mppaing short reads to medaka consensus
+    # assembly and perform polypolish
+    if filenames.shortf is not None:
+        if lib.file_exists(filenames.medaka_consensus_sam, \
+            f"{filenames.medaka_consensus_sam} already exists. Skipping...", f"Mapping {filenames.trimmedf} & {filenames.trimmedr} to {filenames.medaka_consensus} with minimap2...") == False:
+            minimap2(input_args, filenames, assembly_path, "short")
+        if lib.file_exists(filenames.medaka_sorted_sam, \
+            f"{filenames.medaka_sorted_sam} already exists. Skipping...", f"Sorting {filenames.medaka_consensus_sam} with samtools...") == False:
+            samtools_sort(input_args, filenames, assembly_path)
+    # if lib.file_exists(filenames.assembly_sorted_index, \
+        #    f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
+        #   samtools_index(input_args, filenames, assembly_path)
+        if lib.file_exists(filenames.polypolish_consensus, \
+            f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
+            polypolish(input_args, filenames, assembly_path)
 
 def kraken2(input_args, filenames, kraken_path, read_length):
     """
@@ -389,26 +394,64 @@ def main(input_args, filenames):
     trimmed_path = os.path.join(input_args.directory_new, "trimmed")
     lib.make_path(trimmed_path)
 
-    # if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
-    filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
-    if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
-        find_adapters(input_args, filenames, trimmed_path)
-        lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
+    # If short reads are supplied, process these first
+    if filenames.shortf is not None and filenames.shortr is not None:
+        # if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
+        filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
+        if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
+            find_adapters(input_args, filenames, trimmed_path)
+            lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
 
-    filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
-    filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")
-    filenames.utrimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1U.fq.gz")
-    filenames.utrimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2U.fq.gz")
-    filenames.trimlog_file = os.path.join(trimmed_path, f"{input_args.array}_trimmomatic.log")
+        filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
+        filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")
+        filenames.utrimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1U.fq.gz")
+        filenames.utrimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2U.fq.gz")
+        filenames.trimlog_file = os.path.join(trimmed_path, f"{input_args.array}_trimmomatic.log")
 
-    if lib.file_exists_bool(filenames.trimmedf, filenames.shortf, 0.6, "Forward reads already trimmed! Skipping...", "") == False and \
-        lib.file_exists_bool(filenames.trimmedr, filenames.shortr, 0.6, "Reverse reads already trimmed! Skipping...", "") == False:
-        trimmomatic(input_args, filenames, trimmed_path)
-        lib.file_exists_exit(filenames.trimmedf, "Forward reads trimmed successfully!", "Forward reads not trimmed... check the logs and your inputs")
-        lib.file_exists_exit(filenames.trimmedr, "Reverse reads trimmed successfully!", "Reverse reads not trimmed... check the logs and your inputs")
+        if lib.file_exists_bool(filenames.trimmedf, filenames.shortf, 0.6, "Forward reads already trimmed! Skipping...", "") == False and \
+            lib.file_exists_bool(filenames.trimmedr, filenames.shortr, 0.6, "Reverse reads already trimmed! Skipping...", "") == False:
+            trimmomatic(input_args, filenames, trimmed_path)
+            lib.file_exists_exit(filenames.trimmedf, "Forward reads trimmed successfully!", "Forward reads not trimmed... check the logs and your inputs")
+            lib.file_exists_exit(filenames.trimmedr, "Reverse reads trimmed successfully!", "Reverse reads not trimmed... check the logs and your inputs")
 
-    if input_args.nanopore is not None:
-        filenames.nanopore = os.path.abspath(os.path.join(input_args.directory, input_args.nanopore))
+        #filenames.fastqc_out = os.path.join(trimmed_path, filenames.trimmedf.split(".")[0]+"_fastqc.zip")
+        #if lib.file_exists(filenames.fastqc_out, "", "") == False:
+        #   fastqc(input_args, filenames, trimmed_path)
+
+        if input_args.kraken2 is True:
+
+            tax_filter_text = "  _____________________\n___/ Taxonomic Filtering \______________________________________________________"
+            lib.print_t(tax_filter_text)
+
+            kraken2_path = os.path.join(input_args.directory_new, "kraken2")
+            lib.make_path(kraken2_path)
+
+            # short reads
+            filenames.kreport = os.path.join(kraken2_path, f"{input_args.array}_short.report")
+            filenames.k_classified = os.path.join(kraken2_path, f"{input_args.array}_class#.fq")
+            filenames.k_unclassified = os.path.join(kraken2_path, f"{input_args.array}_unclass#.fq")
+            filenames.k_classifiedf = os.path.join(kraken2_path, f"{input_args.array}_class_1.fq")
+            filenames.k_classifiedr = os.path.join(kraken2_path, f"{input_args.array}_class_2.fq")
+            filenames.k_unclassifiedf = os.path.join(kraken2_path, f"{input_args.array}_unclass_1.fq")
+            filenames.k_unclassifiedr = os.path.join(kraken2_path, f"{input_args.array}_unclass_2.fq")
+
+            if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False \
+            and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False:
+                kraken2(input_args, filenames, kraken2_path, "short")
+                if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Forward short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True \
+                and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Reverse short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
+                    filenames.trimmedf = filenames.k_unclassifiedf
+                    filenames.trimmedr = filenames.k_unclassifiedr
+            else:
+                filenames.trimmedf = filenames.k_unclassifiedf
+                filenames.trimmedr = filenames.k_unclassifiedr
+
+        else:
+            lib.print_h("Skipping taxonomic filtering of trimmed reads")    
+
+    # Correct long reads with short reads if both are supplied
+    if input_args.nanopore is not None and filenames.shortf is not None and filenames.shortr is not None:
+        filenames.nanopore = os.path.abspath(input_args.nanopore)
         filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq")
         filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
         filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
@@ -416,41 +459,14 @@ def main(input_args, filenames):
         filenames.nanopore_corr = os.path.join(trimmed_path, f"{input_args.array}_corr.fa")
         if lib.file_exists(filenames.nanopore_corr, "Long reads already trimmed and corrected! Skipping...", "") == False:
             long_read_trim(input_args, filenames, trimmed_path)
+            lib.file_exists_exit(filenames.nanopore_corr, "Long reads trimmed and corrected!", "Long read trimming and correction failed.")
+    elif input_args.nanopore is not None:
+        filenames.nanopore = os.path.abspath(input_args.nanopore)
+        filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
+        if lib.file_exists(filenames.nanopore_trimmed, "Long reads already trimmed! Skipping...", "") == False:
+            porechop(input_args, filenames, trimmed_path)
+            lib.file_exists_exit(filenames.nanopore_trimmed, "Long reads trimmed!", "Long read trimming failed.")
 
-    #filenames.fastqc_out = os.path.join(trimmed_path, filenames.trimmedf.split(".")[0]+"_fastqc.zip")
-    #if lib.file_exists(filenames.fastqc_out, "", "") == False:
-     #   fastqc(input_args, filenames, trimmed_path)
-
-    if input_args.kraken2 is True:
-
-        tax_filter_text = "  _____________________\n___/ Taxonomic Filtering \______________________________________________________"
-        lib.print_t(tax_filter_text)
-
-        kraken2_path = os.path.join(input_args.directory_new, "kraken2")
-        lib.make_path(kraken2_path)
-
-        # short reads
-        filenames.kreport = os.path.join(kraken2_path, f"{input_args.array}_short.report")
-        filenames.k_classified = os.path.join(kraken2_path, f"{input_args.array}_class#.fq")
-        filenames.k_unclassified = os.path.join(kraken2_path, f"{input_args.array}_unclass#.fq")
-        filenames.k_classifiedf = os.path.join(kraken2_path, f"{input_args.array}_class_1.fq")
-        filenames.k_classifiedr = os.path.join(kraken2_path, f"{input_args.array}_class_2.fq")
-        filenames.k_unclassifiedf = os.path.join(kraken2_path, f"{input_args.array}_unclass_1.fq")
-        filenames.k_unclassifiedr = os.path.join(kraken2_path, f"{input_args.array}_unclass_2.fq")
-
-        if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False \
-        and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Short trimmed reads already filtered by Kraken2! Skipping...", "") == False:
-            kraken2(input_args, filenames, kraken2_path, "short")
-            if lib.file_exists_bool(filenames.k_unclassifiedf, filenames.trimmedf, 0.05, "Forward short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True \
-            and lib.file_exists_bool(filenames.k_unclassifiedr, filenames.trimmedr, 0.05, "Reverse short trimmed reads successfully filtered by Kraken2!", "Taxonomic filtering short reads with Kraken2 failed. Check the logs. Continuing with non-filtered reads.") == True:
-                filenames.trimmedf = filenames.k_unclassifiedf
-                filenames.trimmedr = filenames.k_unclassifiedr
-        else:
-            filenames.trimmedf = filenames.k_unclassifiedf
-            filenames.trimmedr = filenames.k_unclassifiedr
-
-    else:
-        lib.print_h("Skipping taxonomic filtering of trimmed reads")    
 
     assembly_text = "  __________\n___/ Assembly \_________________________________________________________________"
     lib.print_t(assembly_text)
@@ -458,8 +474,9 @@ def main(input_args, filenames):
     assembly_path = os.path.join(input_args.directory_new, "assembly")
     lib.make_path(assembly_path)
 
-    # Checks whether to perform a hybrid assembly (with Nanopore flag `-n`) or isolate assembly
-    if input_args.nanopore is not None:
+    # Checks which assembly type to perform
+    # Perform a hybrid assembly (with Nanopore flag `-n` and short reads `-sf` and `-sr`)
+    if input_args.nanopore is not None and filenames.shortf is not None:
         filenames.assembly_fasta = os.path.join(assembly_path, "assembly.fasta")
         filenames.nanopore_sam = os.path.join(assembly_path, f"{input_args.array}_ONT_corr.sam")
         filenames.racon_consensus = os.path.join(assembly_path, "racon_consensus.fa")
@@ -477,8 +494,27 @@ def main(input_args, filenames):
         polishing_text = "  ___________\n___/ Polishing \_________________________________________________________________"
         lib.print_t(polishing_text)
         if lib.file_exists(filenames.polypolish_consensus, "Hybrid assembly already polished! Skipping...", "Polishing hybrid assembly...") == False:
-            hybrid_polish(input_args, filenames, assembly_path)
+            polish(input_args, filenames, assembly_path)
             filenames.assembly_fasta = str(filenames.polypolish_consensus)
+    
+    # Perform long read-only assembly and polish if no short reads supplied
+    elif input_args.nanopore is not None:
+        filenames.assembly_fasta = os.path.join(assembly_path, "assembly.fasta")
+        filenames.nanopore_sam = os.path.join(assembly_path, f"{input_args.array}_ONT_corr.sam")
+        filenames.racon_consensus = os.path.join(assembly_path, "racon_consensus.fa")
+        filenames.racon_consensus_bam = os.path.join(assembly_path, "racon_consensus.fa.bam")
+        filenames.racon_consensus_index = os.path.join(assembly_path, "racon_consensus.fa.bam.bai")
+        filenames.racon_consensus_hdf = os.path.join(assembly_path, "racon_consensus.hdf")
+        filenames.medaka_consensus = os.path.join(assembly_path, "medaka_consensus.fa")
+        if lib.file_exists(filenames.assembly_fasta, "Reads already assembled! Skipping...", "Performing hybrid assembly with Flye...") == False: 
+            assembly_hybrid(input_args, filenames, assembly_path)
+        polishing_text = "  ___________\n___/ Polishing \_________________________________________________________________"
+        lib.print_t(polishing_text)
+        if lib.file_exists(filenames.medaka_consensus, "Hybrid assembly already polished! Skipping...", "Polishing hybrid assembly...") == False:
+            polish(input_args, filenames, assembly_path)
+            filenames.assembly_fasta = str(filenames.medaka_consensus)             
+    
+    # Perform short read-only assembly
     else:
         filenames.assembly_fasta = os.path.join(assembly_path, "scaffolds.fasta")
         if lib.file_exists(filenames.assembly_fasta, "Reads already assembled! Skipping...", "Performing short read assembly with SPADes") == False:

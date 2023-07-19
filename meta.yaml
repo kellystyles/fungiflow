@@ -1,0 +1,22 @@
+package:
+  name: fungiflow
+  version: "1.0.0"
+
+source:
+  git_rev: 
+  git_url: https://github.com/kellystyles/fungiflow.git
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+
+test:
+  imports:
+    - fungiflow
+
+about:
+  home: https://github.com/kellystyles/fungiflow

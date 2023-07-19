@@ -22,8 +22,9 @@ class Files:
     """
     def __init__(self, input_args):
         # defines paths for short reads
-        self.shortf = os.path.abspath(os.path.join(input_args.directory, input_args.illumina_f))
-        self.shortr = os.path.abspath(os.path.join(input_args.directory, input_args.illumina_r))     
+        if input_args.illumina_f is not None and input_args.illumina_r is not None:
+            self.shortf = os.path.abspath(os.path.join(input_args.directory, input_args.illumina_f))
+            self.shortr = os.path.abspath(os.path.join(input_args.directory, input_args.illumina_r))     
         # defines whether singularity commands are needed to execute the pipeline
         if input_args.singularity_image is not None: 
             self.singularity = ["singularity", "exec", input_args.singularity_image]
