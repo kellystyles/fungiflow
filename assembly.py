@@ -133,8 +133,8 @@ def long_read_trim(input_args, filenames, trimmed_path):
     """
     Prepares long reads for assembly by:
     1. trim long reads with `porechop`
-    2. length-filtering reads, removing reads shorter than 3000 bp with `bbduk.sh`
-    3. converting the long reads FASTQ file to FASTA file with `reformat.sh`
+    2. converting the long reads FASTQ file to FASTA file with `reformat.sh`
+    3. length-filtering reads, removing reads shorter than 3000 bp with `bbduk.sh`
     4. mapping short paired Illumina reads to the long reads using `ropebwt2` and `fmlrc-convert`
     5. correcting the long reads with mapped Illumina reads using `fmlrc`
     
@@ -160,18 +160,24 @@ def long_read_trim(input_args, filenames, trimmed_path):
         length_filter_fasta(input_args, filenames, trimmed_path)
         lib.file_exists_exit(filenames.nanopore_length_filtered, \
             "bbduk.sh successfully length-filtered the reads", "bbduk.sh did not complete successfully. Check the logs.")
-    if lib.file_exists(filenames.short_mapped_2_long, \
-        "short reads already mapped to the long reads. Skipping...", "Using fmlrc and ropebwt2 to map the short reads to the long reads") == False:
-        short_map_2_long(input_args, filenames, trimmed_path)
-        lib.file_exists_exit(filenames.short_mapped_2_long, \
-            "The short reads were successfully mapped to the long reads", "The short read mapping to long reads was not successful. Check the logs.")
-    if lib.file_exists(filenames.nanopore_corr, \
-        "fmlrc already corrected the reads", "Using fmlrc to correct the long reads") == False:
-        long_read_corr(input_args, filenames, trimmed_path)
-        lib.file_exists_exit(filenames.nanopore_corr, \
-            "fmlrc successfully corrected the long reads", "fmlrc did not complete successfully. Check the logs.")
-    lib.file_exists_exit(filenames.nanopore_corr, \
-        "Long reads trimmed and corrected!", "Trimming and correction of long reads failed. Please check the logs")
+    
+    # If short reads are also supplied, correct long reads with these
+    try:
+        if input_args.illumina_f is not None: 
+            if lib.file_exists(filenames.short_mapped_2_long, \
+                "short reads already mapped to the long reads. Skipping...", "Using fmlrc and ropebwt2 to map the short reads to the long reads") == False:
+                short_map_2_long(input_args, filenames, trimmed_path)
+                lib.file_exists_exit(filenames.short_mapped_2_long, \
+                    "The short reads were successfully mapped to the long reads", "The short read mapping to long reads was not successful. Check the logs.")
+            if lib.file_exists(filenames.nanopore_corr, \
+                "fmlrc already corrected the reads", "Using fmlrc to correct the long reads") == False:
+                long_read_corr(input_args, filenames, trimmed_path)
+                lib.file_exists_exit(filenames.nanopore_corr, \
+                    "fmlrc successfully corrected the long reads", "fmlrc did not complete successfully. Check the logs.")
+            lib.file_exists_exit(filenames.nanopore_corr, \
+                "Long reads trimmed and corrected!", "Trimming and correction of long reads failed. Please check the logs")
+    except AttributeError:
+        continue
 
 def assembly_short(input_args, filenames, assembly_path):
     """
@@ -215,10 +221,18 @@ def assembly_hybrid(input_args, filenames, assembly_path):
     stdout = os.path.join(assembly_path, f"{input_args.array}.out")
     stderr = os.path.join(assembly_path, f"{input_args.array}.err")
 
+    # Selects either the corrected ONT reads or the trimmed ONT reads for a hybrid
+    # or long read-only assembly, respectively.
+    try:
+        if filenames.nanopore_corr is not None:
+            input_reads = filenames.nanopore_corr
+    except AttributeError:
+        input_reads = filenames.nanopore_trimmed
+        
     if input_args.type == "metagenomic":
-        cmd = ["flye", "--nano-raw", filenames.nanopore_corr, "--out-dir", assembly_path, "--threads", str(input_args.cpus), "--iterations", "2", "--meta"]
+        cmd = ["flye", "--nano-raw", input_reads, "--out-dir", assembly_path, "--threads", str(input_args.cpus), "--iterations", "2", "--meta"]
     else:
-        cmd = ["flye", "--nano-raw", filenames.nanopore_corr, "--out-dir", assembly_path, "--threads", str(input_args.cpus), "--iterations", "2"]
+        cmd = ["flye", "--nano-raw", input_reads, "--out-dir", assembly_path, "--threads", str(input_args.cpus), "--iterations", "2"]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd    
     # Assembly with FLYE
     lib.print_h(f"Hybrid isolate assembly of {input_args.array} reads with FLYE")
@@ -341,21 +355,24 @@ def polish(input_args, filenames, assembly_path):
         "medaka consensus assembly already exists, Skipping...", f"Polishing {filenames.racon_consensus} with medaka") == False:
         medaka(input_args, filenames, assembly_path)
     
-    # will perform hybrid polishing steps by mppaing short reads to medaka consensus
+    # will perform hybrid polishing steps by mapping short reads to medaka consensus
     # assembly and perform polypolish
-    if filenames.shortf is not None:
-        if lib.file_exists(filenames.medaka_consensus_sam, \
-            f"{filenames.medaka_consensus_sam} already exists. Skipping...", f"Mapping {filenames.trimmedf} & {filenames.trimmedr} to {filenames.medaka_consensus} with minimap2...") == False:
-            minimap2(input_args, filenames, assembly_path, "short")
-        if lib.file_exists(filenames.medaka_sorted_sam, \
-            f"{filenames.medaka_sorted_sam} already exists. Skipping...", f"Sorting {filenames.medaka_consensus_sam} with samtools...") == False:
-            samtools_sort(input_args, filenames, assembly_path)
-    # if lib.file_exists(filenames.assembly_sorted_index, \
-        #    f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
-        #   samtools_index(input_args, filenames, assembly_path)
-        if lib.file_exists(filenames.polypolish_consensus, \
-            f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
-            polypolish(input_args, filenames, assembly_path)
+    try:
+        if input_args.illumina_f is not None:
+            if lib.file_exists(filenames.medaka_consensus_sam, \
+                f"{filenames.medaka_consensus_sam} already exists. Skipping...", f"Mapping {filenames.trimmedf} & {filenames.trimmedr} to {filenames.medaka_consensus} with minimap2...") == False:
+                minimap2(input_args, filenames, assembly_path, "short")
+            if lib.file_exists(filenames.medaka_sorted_sam, \
+                f"{filenames.medaka_sorted_sam} already exists. Skipping...", f"Sorting {filenames.medaka_consensus_sam} with samtools...") == False:
+                samtools_sort(input_args, filenames, assembly_path)
+        # if lib.file_exists(filenames.assembly_sorted_index, \
+            #    f"{filenames.assembly_sorted_index} already exists. Skipping...", f"Indexing {filenames.medaka_sorted_sam} with samtools...") == False:
+            #   samtools_index(input_args, filenames, assembly_path)
+            if lib.file_exists(filenames.polypolish_consensus, \
+                f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
+                polypolish(input_args, filenames, assembly_path)
+    except AttributeError:
+        continue
 
 def kraken2(input_args, filenames, kraken_path, read_length):
     """
@@ -395,7 +412,7 @@ def main(input_args, filenames):
     lib.make_path(trimmed_path)
 
     # If short reads are supplied, process these first
-    if filenames.shortf is not None and filenames.shortr is not None:
+    if getattr(filenames, 'shortf', None) is not None:
         # if directory input_arg == '.' then this command will put the input_arg.array value before the read, so need to use absolute path for the directory argument
         filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
         if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
@@ -449,24 +466,31 @@ def main(input_args, filenames):
         else:
             lib.print_h("Skipping taxonomic filtering of trimmed reads")    
 
-    # Correct long reads with short reads if both are supplied
-    if input_args.nanopore is not None and filenames.shortf is not None and filenames.shortr is not None:
-        filenames.nanopore = os.path.abspath(input_args.nanopore)
-        filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq")
-        filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
-        filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
-        filenames.short_mapped_2_long = os.path.join(trimmed_path, f"{input_args.array}_mapped.npy")
-        filenames.nanopore_corr = os.path.join(trimmed_path, f"{input_args.array}_corr.fa")
-        if lib.file_exists(filenames.nanopore_corr, "Long reads already trimmed and corrected! Skipping...", "") == False:
-            long_read_trim(input_args, filenames, trimmed_path)
-            lib.file_exists_exit(filenames.nanopore_corr, "Long reads trimmed and corrected!", "Long read trimming and correction failed.")
-    elif input_args.nanopore is not None:
-        filenames.nanopore = os.path.abspath(input_args.nanopore)
-        filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
-        if lib.file_exists(filenames.nanopore_trimmed, "Long reads already trimmed! Skipping...", "") == False:
-            porechop(input_args, filenames, trimmed_path)
-            lib.file_exists_exit(filenames.nanopore_trimmed, "Long reads trimmed!", "Long read trimming failed.")
-
+    # Trim long reads
+    try:    
+        if input_args.nanopore is True:
+            # Correct long reads with short reads if both are supplied
+            if input_args.illumina_f is True and input_args.illumina_r is True:
+                filenames.nanopore = os.path.abspath(input_args.nanopore)
+                filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq")
+                filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
+                filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
+                filenames.short_mapped_2_long = os.path.join(trimmed_path, f"{input_args.array}_mapped.npy")
+                filenames.nanopore_corr = os.path.join(trimmed_path, f"{input_args.array}_corr.fa")
+                if lib.file_exists(filenames.nanopore_corr, "Long reads already trimmed and corrected! Skipping...", "") == False:
+                    long_read_trim(input_args, filenames, trimmed_path)
+                    lib.file_exists_exit(filenames.nanopore_corr, "Long reads trimmed and corrected!", "Long read trimming and correction failed.")
+            # Else trim and filter just the long reads alone
+            else:
+                filenames.nanopore = os.path.abspath(input_args.nanopore)
+                filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
+                filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
+                filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
+                if lib.file_exists(filenames.nanopore_length_filtered, "Long reads already trimmed! Skipping...", "") == False:
+                    long_read_trim(input_args, filenames, trimmed_path)
+                    lib.file_exists_exit(filenames.nanopore_length_filtered, "Long reads trimmed!", "Long read trimming failed.")
+    except AttributeError:
+        exit(1)
 
     assembly_text = "  __________\n___/ Assembly \_________________________________________________________________"
     lib.print_t(assembly_text)

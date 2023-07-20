@@ -8,15 +8,99 @@ source:
 
 requirements:
   build:
-    - python
-    - setuptools
+    - _libgcc_mutex 0.1 conda_forge
+    - _openmp_mutex 4.5 2_gnu
+    - bzip2 1.0.8 h7f98852_4
+    - ca-certificates 2022.12.7 ha878542_0
+    - ld_impl_linux-64 2.40 h41732ed_0
+    - libffi 3.4.2 h7f98852_5
+    - libgcc-ng 12.2.0 h65d4601_19
+    - libgomp 12.2.0 h65d4601_19
+    - libnsl 2.0.0 h7f98852_0
+    - libsqlite 3.40.0 h753d276_1
+    - libuuid 2.38.1 h0b41bf4_0
+    - libzlib 1.2.13 h166bdaf_4
+    - ncurses 6.3 h27087fc_1
+    - openssl 3.1.0 hd590300_2
+    - pip 23.1.2 pyhd8ed1ab_0
+    - python 3.8.16 he550d4f_1_cpython
+    - readline 8.2 h8228510_1
+    - setuptools 67.7.2 pyhd8ed1ab_0
+    - tk 8.6.12 h27826a3_0
+    - wheel 0.40.0 pyhd8ed1ab_0
+    - xz 5.2.6 h166bdaf_0
 
   run:
-    - python
+    - augustus ==3.5.0
+    - bamtools
+    - bedtools
+    - biopython
+    - blast
+    - codingquarry
+    - diamond >=2.1.6
+    - distro
+    - ete3
+    - evidencemodeler ==1.1.1
+    - exonerate
+    - glimmerhmm
+    - goatools
+    - hisat2
+    - hmmer
+    - iqtree
+    - kallisto >=0.46.0,<0.46.2
+    - mafft >=7
+    - matplotlib-base <3.5
+    - minimap2
+    - natsort
+    - numpy
+    - pandas <2.0
+    - pasa >=2.4.1
+    - perl
+    - perl-clone
+    - perl-db-file
+    - perl-dbd-mysql
+    - perl-hash-merge
+    - perl-json
+    - perl-local-lib
+    - perl-logger-simple
+    - perl-math-utils
+    - perl-mce
+    - perl-parallel-forkmanager
+    - perl-scalar-util-numeric
+    - perl-soap-lite
+    - perl-text-soundex
+    - phyml
+    - pigz
+    - proteinortho >=6.0.16
+    - psutil
+    - python >=3.6,<3.9
+    - r-base >=3.4.1
+    - raxml
+    - requests
+    - salmon >=0.9
+    - samtools >=1.9
+    - scikit-learn
+    - scipy
+    - seaborn
+    - snap
+    - stringtie
+    - tantan
+    - tbl2asn
+    - trimal
+    - trimmomatic
+    - trinity >=2.8.5=h8b12597_5
+    - trnascan-se
+    - ucsc-pslcdnafilter
+    - racon
+    - flye
+    - medaka
+    - 
 
 test:
   imports:
     - fungiflow
+    - pandas
+    - biopython
 
 about:
   home: https://github.com/kellystyles/fungiflow
