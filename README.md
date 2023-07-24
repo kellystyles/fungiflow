@@ -8,7 +8,7 @@
 
 > A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
-A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+A Python pipeline primarily designed for manipulating fungal sequence data in a Unix environment. The primary assembly module will clean and filter sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
 <p align="center">
 
@@ -20,14 +20,13 @@ A Python pipeline primarily designed for manipulating fungal short read Illumina
 
 The overall workflow is defined by several modules:
 1. **Assembly module**
-    1. Trimming of short Illumina reads with Trimmomatic
-    2. Trimming of long MinION reads with porechop
-    3. Correction of trimmed MinION reads with FMLRC, using trimmed short reads
-    4. Filtering out non-eukaroytic contamination with Kraken2 (standard database - 16 GB preformatted) - *OPTIONAL*
-    5. QC of trimmed and filtered reads with FastQC
-    6. Assembly:
+    1. Trimming of short Illumina reads with Trimmomatic or long MinION reads with porechop
+    2. Correction of trimmed MinION reads with FMLRC, using trimmed short reads
+    3. Filtering out non-eukaroytic contamination with Kraken2 (standard database - 16 GB preformatted) - *OPTIONAL*
+    4. QC of trimmed and filtered reads with FastQC
+    5. Assembly:
         - SPAdes for assembly with short Illumina sequence reads
-        - Flye for hybrid assembly with short Illumina and long MinION sequence reads
+        - Flye for assembly of long MinION sequence reads or hybrid assembly with both long MinION and short Illumina sequence reads
 2. **Annotation module** - *OPTIONAL*
     1. Cleaning, sorting, soft masking, and gene prediction of contigs with the Funannotate pipeline (v1.8.3)
 3. **Post-analysis module**
@@ -75,9 +74,9 @@ source ~/.bashrc
 To ensure a repeatable and consistent output, this pipeline relies on several Singularity containers. Download the required containers from Singularity Hub using the following commands:
 
 ```
-singularity pull library://styleske/fungiflow/fungiflow:3.0.0                 # main fungiflow image
-singularity pull library://kellystyles/fungiflow/funannotate:1.0.0            # funannotate image (Official Docker image + EggNOGG)
-singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
+singularity pull library://styleske/fungiflow/fungiflow:3.0.0               # main fungiflow image
+singularity pull library://kellystyles/fungiflow/funannotate:1.0.0          # funannotate image (Official Docker image + EggNOGG)
+singularity pull docker://antismash/standalone:6.1.1       				    # antismash image (Official Docker image)
 ```
 
 The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` (or `conda`) as follows:
@@ -155,7 +154,7 @@ usage: fungiflow.py [-h] -d DIRECTORY -if ILLUMINA_F -ir ILLUMINA_R -a ARRAY -c 
                     [-ant] [-f] [-s SINGULARITY_IMAGE] [-data DATABASE_PATH] 
                     [-sf SINGULARITY_FUNANNOTATE] [-sa SINGULARITY_ANTISMASH] 
                     [-its] [-k] [-e] [-b] [-idb ITS_DB] [-kdb KRAKEN2_DB] 
-                    [-bdb BLOB_DB] [-edb EGGNOG_DB] [-n NANOPORE] 
+                    [-edb EGGNOG_DB] [-n NANOPORE] 
                     [-t {isolate,metagenomic}] [-minlen MINIMUM_LENGTH] 
                     [-mtm MIN_TRAINING_MODELS] [--careful] 
                     [--genemark_path GENEMARK_PATH] [--print_workflow]
@@ -185,8 +184,9 @@ optional arguments:
   -sa SINGULARITY_ANTISMASH, --singularity_antismash SINGULARITY_ANTISMASH
                         Singularity image for antiSMASH
   -its, --its           Search assembly for ITS sequences. Part of post-analysis module.
-  -k, --kraken2         Run trimmed reads against Kraken2 standard database. Will save unclassified reads (i.e., not matching the standard database), which will be used for assembly. Should not be used for a metagenomic assembly. 
-                        Part of taxonomic module.
+  -k, --kraken2         Run trimmed reads against Kraken2 standard database. Will save unclassified reads
+                        (i.e., not matching the standard database), which will be used for assembly. Should
+                        not be used for a metagenomic assembly. 
   -e, --eggnog          Functionally annotate the assembly proteins with eggnog. Part of annotation module.
   -b, --blobplot        Run blobtools module on output assembly. Part of blobtools module.
   -idb ITS_DB, --its_db ITS_DB
@@ -213,7 +213,7 @@ optional arguments:
 
 There is a SLURM script for running the pipeline on your SLURM-compatible HPC. Edit this with your specific variables prior to use.
 ``` 
-sbatch fungiflow_slurm.sh
+sbatch slurm.sh
 ```
 
 ### Speed
@@ -263,19 +263,19 @@ project directory
 │
 └───assembly
 │   │   (array1_val)_scaffolds.fasta      # SPADes assembly file
-|   |   assembly.fasta                    # Flye assembly file
+|   |   assembly.fasta                    # Flye long/hybrid assembly file
 |   |   (array1_val)_ONT_corr.sam         # short reads mapped to Flye assembly
-│   │   (array1_val)_pilon.fa             # pilon polished hybrid assembly file
-│   │   racon_consensus.fa                # racon polished hybrid assembly file
+│   │   (array1_val)_polypolish.fa             # polypolish polished hybrid assembly file
+│   │   racon_consensus.fa                # racon polished long/hybrid assembly file
 |   |   racon_consensus.fa.bam            # short reads mapped to racon assembly
 |   |   racon_consensus.fa.bam.bai        # index of above file
 |   |   racon_consensus.hdf               # corrected MinION reads aligned to racon assembly
-|   |   medaka_consensus.fa               # medaka polished hybrid assembly file
-|   |   medaka_consensus.sam              # corrected MinION reads aligned to medaka assembly 
+|   |   medaka_consensus.fa               # medaka polished long/hybrid assembly file
+|   |   medaka_consensus.sam              # corrected MinION reads aligned to medaka hybrid assembly 
 |   |   medaka_consensus.bai              # index of above file
 |   |   medaka_sorted.sam                 # sorted file of `medaka_consensus.sam` 
 |   |   medaka_sorted.sam.bai             # index of above file
-|   |   polypolish.fasta                  # final polished hybrid assembly
+|   |   polypolish.fasta                  # final polished long/hybrid assembly
 │   
 └───funannotate
 │   │
@@ -304,14 +304,6 @@ project directory
 │   |   transposed_report.tsv             # output report file used by this pipeline
 |   |   report.html                       # output HTML viewer
 |   |   ...
-|
-└───blobplots
-│   │
-│   |   assembly.bam                      # short reads mapped to assembly
-|   |   assembly.bam.bai                  # index of above file
-|   |   assembly.blobDB.json              # blobtools JSON output file
-|   |   megablast.out                     # MegaBLAST output
-|   |   ...
 
 ```
 ### Collating data from multiple Fungiflow runs
@@ -326,7 +318,7 @@ python3 parse_all.py 'parent_directory'
 
 - Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `MegaBLAST` in the blobplots package).
 - Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
-- Whilst repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
+- Whilst repeatability and accessibility is ensured by the usage of Singularity containers, a conda environment and/or PyPI package is being prepared.
 
 ## Known Bugs
 
