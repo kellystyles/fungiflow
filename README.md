@@ -330,7 +330,9 @@ python3 parse_all.py 'parent_directory'
 
 ## Known Bugs
 
+## How to cite
 
+A manuscript is currently being prepared for submission, so check back here in several months.
 
 ## References
 
