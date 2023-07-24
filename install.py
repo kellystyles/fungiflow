@@ -3,6 +3,7 @@ import os
 import argparse
 import subprocess
 import datetime
+import requests
 import library as lib
 
 """
@@ -36,9 +37,9 @@ def get_args():
                             help='Number of threads to use', type=str, default="4", required=False)
         parser.add_argument('-m', '--mem', action='store',
                             help='Amount of memory to use (in GB)', type=str, default="8", required=False)
-        parser.add_argument('-s', '--singularity_fungiflow', action='store',
+        parser.add_argument('-s', '--singularity_fungiflow', action='store', default=None,
                             help='Path to Fungiflow Singularity container', type=str, required=False)                            
-        parser.add_argument('-sfun', '--singularity_funannotate', action='store',
+        parser.add_argument('-sfun', '--singularity_funannotate', action='store', default=None,
                             help='Path to Funannotate Singularity container', type=str, required=False)        
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
@@ -96,7 +97,7 @@ def install_ncbi_its(input_args):
     try:
         lib.execute(cmd1,stdout,stderr)
         lib.execute(cmd2,stdout,stderr)
-        extract_tar_gz("taxdb.tar.gz", ".")
+        lib.extract_tar_gz("taxdb.tar.gz", ".")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
         print(e.output)
@@ -199,7 +200,7 @@ def main():
     print(f"Database path: {databases_path}")
     os.chdir(databases_path)
 
-    # need to check this code block to see if what dbs are printed with a given input
+    # need to check this code block to see what dbs are printed with a given input
     dbs = ["kraken2","ncbi-its","eggnog"]
     if args.databases != "all":
         input_databases = args.databases.split(',')
@@ -209,7 +210,9 @@ def main():
                 exit()
         dbs = args.databases
     else:
-        input_databases = args.databases
+        input_databases = dbs
+    
+    print(input_databases)
 
     # define database paths
     kraken2_path = os.path.join(databases_path,"kraken2")

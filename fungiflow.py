@@ -19,9 +19,9 @@ def get_args():
             description="Fungiflow - the automated eukaryotic genomic pipeline for fungi.")
         parser.add_argument('-d', '--directory', action='store',
                             help='Working directory path.', type=str, required=True)     
-        parser.add_argument('-if', '--illumina_f', action='store',
+        parser.add_argument('-if', '--illumina_f', action='store', default=None,
                             help='Illumina short forward reads path', type=str, required=False)
-        parser.add_argument('-ir', '--illumina_r', action='store',
+        parser.add_argument('-ir', '--illumina_r', action='store', default=None,
                             help='Illumina short reverse reads path', type=str, required=False)
         parser.add_argument('-a', '--array', action='store',
                             help='a unique value', type=str, required=True)
@@ -35,7 +35,7 @@ def get_args():
                             help='Add this argument if you would like to annotate the assembly')
         parser.add_argument('-s', '--singularity_image', action='store', required=False,
                             help='Primary Singularity image for Fungiflow', type=str)
-        parser.add_argument('-data', '--database_path', action='store', required=False,
+        parser.add_argument('-data', '--database_path', action='store', required=False, default=None,
                             help='Path to installed databases', type=str)
         parser.add_argument('-sf', '--singularity_funannotate', action='store',
                             help='Singularity image for Funannotate', type=str, required=False)
@@ -56,7 +56,7 @@ def get_args():
                             help='Path to alternative Kraken2 standard database.', type=str)
         parser.add_argument('-edb', '--eggnog_db', action='store', required=False, 
                             help='Path to alternative eggnog database for eggnog.', type=str)
-        parser.add_argument('-n', '--nanopore', action='store',
+        parser.add_argument('-n', '--nanopore', action='store', default=None,
                             help='Path to MinION reads.', type=str, required=False)
         parser.add_argument('-t', '--type', action='store', default="isolate", required=False, 
                             help='Sequence data source type. Accepted arguments are \
@@ -88,16 +88,16 @@ def main():
     start_time = datetime.datetime.now()
     print(input_args)
 
+    # Sets up class object for filenames
+    filenames = lib.Files(input_args)
+
     # Check databases
-    lib.check_databases(input_args)
+    lib.check_databases(input_args, filenames)
     
     ### MAKE INPUT DIR ABSOLUTE PATH
     input_args.directory_new = os.path.abspath(os.path.join(input_args.directory, input_args.array))
     lib.make_path(input_args.directory_new)
     os.chdir(input_args.directory_new)
-    
-    # Sets up class object for filenames
-    filenames = lib.Files(input_args)
 
     # Running 'ASSEMBLY' module
     assembly.main(input_args, filenames)
@@ -107,7 +107,6 @@ def main():
         funannotate.main(input_args, filenames)
     else:
         lib.print_h("Skipping assembly annotation...")
-        filenames.funannotate_gbk = filenames.assembly_fasta
 
     # Running 'POST_ANALYSIS' module
     post_analysis.main(input_args, filenames)

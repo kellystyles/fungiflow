@@ -45,11 +45,11 @@ def blastn(input_args,filenames,blast_path):
     stdout = os.path.join(blast_path,f"{input_args.array}.out")
     stderr = os.path.join(blast_path,f"{input_args.array}.err")
 
-    cmd = f"blastn -db {input_args.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.blast_out}"
+    cmd = f"blastn -db {filenames.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.blast_out}"
     if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
     commands = [cmd]
     try:
-        lib.print_n(f"BLASTn of {filenames.its_fasta} against {input_args.its_db}")
+        lib.print_n(f"BLASTn of {filenames.its_fasta} against {filenames.its_db}")
         lib.execute_shell(commands,stdout,stderr)
     except subprocess.CalledProcessError as e:
         print(e.returncode)
@@ -91,17 +91,28 @@ def quast(input_args,filenames,output_path):
     stderr = os.path.join(output_path,f"{input_args.array}.err")
 
     try:
-        if os.path.exists(filenames.funannotate_gff) == True and os.stat(filenames.funannotate_gff).st_size > 0:
+        # find reads to map to assembly for SV analysis
+        try:
+            if input_args.nanopore is not None:
+                input_reads = ["--nanopore", filenames.nanopore_trimmed]
+            elif input_args.nanopore is None and input_args.illumina_f is not None:
+                input_reads = ["--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
+            else:
+                input_reads = ""
+        except AttributeError:
+            input_reads = ""
+        # use funannotate gene predictions if they exist
+        if lib.file_exists(filenames.funannotate_gff, "", "") is True:
             lib.print_n(f"Funannotate annotations GFF file exists, analysing {filenames.funannotate_gff} and {filenames.assembly_fasta} with quast")
-            cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-g",filenames.funannotate_gff,"-t",input_args.cpus,"--fungus","-L","-b","--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
+            cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-g",filenames.funannotate_gff,"-t",input_args.cpus,"--fungus","-L","-b"] + input_reads
             if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
         else:
             lib.print_n(f"Funannotate annotations GFF file does not exist, analysing {filenames.assembly_fasta} with quast")
-            cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b","--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
+            cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b"] + input_reads
             if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
     except AttributeError:
         lib.print_n(f"Funannotate annotations GFF file does not exist, analysing {filenames.assembly_fasta} with quast")
-        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b","--pe1",filenames.trimmedf,"--pe2",filenames.trimmedr]
+        cmd = ["quast.py",filenames.assembly_fasta,"-o",output_path,"-t",input_args.cpus,"--fungus","-L","-b"] + input_reads
         if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
 
     try:
@@ -329,27 +340,31 @@ def parse_antismash(input_args, filenames):
 
     contents = open_json(filenames.antismash_json)
     df = parse_json(contents, filenames.antismash_json)
-    try:
-        df.to_csv(filenames.bgc_results)
 
-        flat = {}
-        flat["ID"] = input_args.array
-        flat["BGC_count"] = str(df.shape[0])
-        flat["contig_edge_proportion"] = round(int(df['partial'].value_counts().loc["True"]) / int(df['partial'].size), 2)
-        flat["kc_proportion"] = round(len(df[df['kc_mibig_acc'] != '']) / int(df['kc_mibig_acc'].size), 2)
-        bgc_list = []
-        bgc_list.append(df['BGC_type'].unique().tolist())
-        flat["BGC_types"] = bgc_list
-        flat["BGC_mean_length"] = round(df['BGC_length'].mean(), 2)
-        flat["BGC_median_length"] = round(df['BGC_length'].median(), 2)
-        flat["total_BGC_length"] = flat['BGC_length'].sum()
+    #try:
+    df.to_csv(filenames.bgc_results)
 
-        flat_df = pd.DataFrame.from_dict(flat)
-        
-        return flat_df
+    flat = {}
+    flat["ID"] = input_args.array
+    flat["BGC_count"] = str(df.shape[0])
+    print(flat)
+    flat["contig_edge_proportion"] = round(int(df['partial'].value_counts().loc["True"]) / int(df['partial'].size), 2)
+    flat["kc_proportion"] = round(len(df[df['kc_mibig_acc'] != '']) / int(df['kc_mibig_acc'].size), 2)
 
-    except KeyError:
-        print("No BGCs.")
+    bgc_list = []
+    bgc_list.append(df['BGC_type'].unique().tolist())
+    flat["BGC_types"] = bgc_list
+
+    flat["BGC_mean_length"] = round(df['BGC_length'].mean(), 2)
+    flat["BGC_median_length"] = round(df['BGC_length'].median(), 2)
+    flat["total_BGC_length"] = round(df['BGC_length'].sum(), 2)
+    print(flat)
+    flat_df = pd.DataFrame.from_dict(flat)
+    print(flat_df)    
+    return flat_df
+
+    #except KeyError:
+     #   print("No BGCs.")
 
 def main(input_args,filenames):
 
@@ -409,7 +424,7 @@ def main(input_args,filenames):
         lib.print_h("Skipping taxonomy lookup of isolate")
 
     # Run antiSMASH if present in the input arguments
-    if input_args.antismash is not None:
+    if input_args.antismash is True:
 
         bgc_text = "  ____________\n___/ BGC search \_______________________________________________________________"
         lib.print_t(bgc_text)
@@ -427,18 +442,19 @@ def main(input_args,filenames):
                     lib.print_n("Removing existing antiSMASH output directory")
                     shutil.rmtree(antismash_path)
                 lib.make_path(antismash_path)
-                # Will preferentially use the functionally annotated GBK file
-                if lib.file_exists(filenames.funannotate_func_gbk,f"Using {filenames.funannotate_func_gbk} as input for antiSMASH", \
-                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                    filenames.antismash_assembly = filenames.funannotate_func_gbk
-                # else will use the prediction GBK file
-                elif lib.file_exists(filenames.funannotate_gbk,f"Using {filenames.funannotate_gbk} as input for antiSMASH", \
-                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                    filenames.antismash_assembly = filenames.funannotate_gbk
-                # else will use the sorted assembly with nicer contig names if Funannotate has been run
-                elif lib.file_exists(filenames.funannotate_sort_fasta,f"Using {filenames.funannotate_sort_fasta} as input for antiSMASH", \
-                    f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
-                    filenames.antismash_assembly = filenames.funannotate_sort_fasta
+                if input_args.funannotate is True:
+                    # Will preferentially use the functionally annotated GBK file
+                    if lib.file_exists(filenames.funannotate_func_gbk,f"Using {filenames.funannotate_func_gbk} as input for antiSMASH", \
+                        f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                        filenames.antismash_assembly = filenames.funannotate_func_gbk
+                    # else will use the prediction GBK file
+                    elif lib.file_exists(filenames.funannotate_gbk,f"Using {filenames.funannotate_gbk} as input for antiSMASH", \
+                        f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                        filenames.antismash_assembly = filenames.funannotate_gbk
+                    # else will use the sorted assembly with nicer contig names if Funannotate has been run
+                    elif lib.file_exists(filenames.funannotate_sort_fasta,f"Using {filenames.funannotate_sort_fasta} as input for antiSMASH", \
+                        f"Using {filenames.assembly_fasta} as input for antiSMASH") == True:
+                        filenames.antismash_assembly = filenames.funannotate_sort_fasta
                 else:
                     filenames.antismash_assembly = filenames.assembly_fasta
                 antismash(input_args,filenames,antismash_path)
@@ -448,19 +464,21 @@ def main(input_args,filenames):
 
         # If the antiSMASH JSON file exists, parse it and plot some figures
         # Might need to add in an exception to catch any errors arising from trying to parse an incomplete antiSMASH run
-        if lib.file_exists(filenames.antismash_json,"","") is True:
+        try:
+            print("plotting1")
             bgc_df = parse_antismash(input_args, filenames)
             print(bgc_df)
-            try:
-                final_df = final_df.merge(bgc_df, on="ID")
-                final_df.drop(columns=["ID"])
-                print("plotting")
-                plot_strip(bgc_df, input_args, results_path)
-                plot_violin(bgc_df, input_args, results_path)
-            except TypeError:
-                print("No BGCs identified. Skipping BGC plots...")
-            except KeyError:
-                pass
+            final_df = final_df.merge(bgc_df, on="ID")
+            final_df.drop(columns=["ID"])
+            print("plotting2")
+            print("plotting the plots")
+
+            plot_strip(bgc_df, input_args, results_path)
+            plot_violin(bgc_df, input_args, results_path)
+        except TypeError:
+            print("No BGCs identified. Skipping BGC plots...")
+        except KeyError:
+            pass
     else:
         lib.print_n("Skipping BGC search with antiSMASH. Use '--antismash' as a script argument if you would like to do this.")
 
@@ -475,3 +493,4 @@ def main(input_args,filenames):
 
 if __name__ == '__main__':
     main()
+

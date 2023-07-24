@@ -177,7 +177,7 @@ def long_read_trim(input_args, filenames, trimmed_path):
             lib.file_exists_exit(filenames.nanopore_corr, \
                 "Long reads trimmed and corrected!", "Trimming and correction of long reads failed. Please check the logs")
     except AttributeError:
-        continue
+        pass
 
 def assembly_short(input_args, filenames, assembly_path):
     """
@@ -247,7 +247,11 @@ def minimap2(input_args, filenames, assembly_path, read_length):
     stderr = os.path.join(assembly_path, f"{input_args.array}_minimap2.err")
     
     if read_length == "long":
-        cmd = ["minimap2", "-ax", "map-ont", filenames.assembly_fasta, filenames.nanopore_corr, "-o", filenames.nanopore_sam]
+        if input_args.illumina_f is not None:
+            input_file = filenames.nanopore_corr
+        else:
+            input_file = filenames.nanopore_length_filtered    
+        cmd = ["minimap2", "-ax", "map-ont", filenames.assembly_fasta, input_file, "-o", filenames.nanopore_sam]
     elif read_length == "short":
         cmd = ["minimap2", "-ax", "sr", filenames.medaka_consensus, filenames.trimmedf, filenames.trimmedr, "-o", filenames.medaka_consensus_sam]
     else:
@@ -266,7 +270,11 @@ def minimap2(input_args, filenames, assembly_path, read_length):
 def racon(input_args, filenames, assembly_path):
     stdout = filenames.racon_consensus
     stderr = os.path.join(assembly_path, f"{input_args.array}_racon.out")
-    cmd = ["racon", "--no-trimming", "-t", input_args.cpus, filenames.nanopore_corr, filenames.nanopore_sam, filenames.assembly_fasta]
+    if input_args.illumina_f is not None:
+        input_file = filenames.nanopore_corr
+    else:
+        input_file = filenames.nanopore_length_filtered     
+    cmd = ["racon", "--no-trimming", "-t", input_args.cpus, input_file, filenames.nanopore_sam, filenames.assembly_fasta]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
    
     lib.execute(cmd, stdout, stderr)
@@ -372,7 +380,7 @@ def polish(input_args, filenames, assembly_path):
                 f"{filenames.polypolish_consensus} consensus already exists. Skipping...", f"Polishing {filenames.medaka_sorted_sam} with polypolish...") == False:
                 polypolish(input_args, filenames, assembly_path)
     except AttributeError:
-        continue
+        pass
 
 def kraken2(input_args, filenames, kraken_path, read_length):
     """
@@ -387,12 +395,12 @@ def kraken2(input_args, filenames, kraken_path, read_length):
 
     if read_length == "short":
         lib.print_h(f"Performing Kraken2 analysis of short trimmed reads {input_args.array}")
-        cmd = ["kraken2", "--db", input_args.kraken2_db, \
+        cmd = ["kraken2", "--db", filenames.kraken2_db, \
             "--threads", input_args.cpus, "--use-names", "--report", filenames.kreport, "--classified-out", filenames.k_classified, \
                 "--unclassified-out", filenames.k_unclassified, "--paired", filenames.trimmedf, filenames.trimmedr]
     elif read_length == "long":
         lib.print_h(f"Performing Kraken2 analysis of long trimmed reads {input_args.array}")
-        cmd = ["kraken2", "--db", input_args.kraken2_db, \
+        cmd = ["kraken2", "--db", filenames.kraken2_db, \
             "--threads", input_args.cpus, "--use-names", "--report", filenames.kreport_long, "--classified-out", filenames.k_long_classified, \
                 "--unclassified-out", filenames.k_long_unclassified, filenames.nanopore_corr]
     else:
@@ -468,7 +476,7 @@ def main(input_args, filenames):
 
     # Trim long reads
     try:    
-        if input_args.nanopore is True:
+        if input_args.nanopore is not None:
             # Correct long reads with short reads if both are supplied
             if input_args.illumina_f is True and input_args.illumina_r is True:
                 filenames.nanopore = os.path.abspath(input_args.nanopore)
@@ -481,16 +489,18 @@ def main(input_args, filenames):
                     long_read_trim(input_args, filenames, trimmed_path)
                     lib.file_exists_exit(filenames.nanopore_corr, "Long reads trimmed and corrected!", "Long read trimming and correction failed.")
             # Else trim and filter just the long reads alone
-            else:
-                filenames.nanopore = os.path.abspath(input_args.nanopore)
-                filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
-                filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
-                filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
-                if lib.file_exists(filenames.nanopore_length_filtered, "Long reads already trimmed! Skipping...", "") == False:
-                    long_read_trim(input_args, filenames, trimmed_path)
-                    lib.file_exists_exit(filenames.nanopore_length_filtered, "Long reads trimmed!", "Long read trimming failed.")
     except AttributeError:
-        exit(1)
+        pass            
+    try:
+        filenames.nanopore = os.path.abspath(input_args.nanopore)
+        filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
+        filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
+        filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
+        if lib.file_exists(filenames.nanopore_length_filtered, "Long reads already trimmed! Skipping...", "") == False:
+            long_read_trim(input_args, filenames, trimmed_path)
+            lib.file_exists_exit(filenames.nanopore_length_filtered, "Long reads trimmed!", "Long read trimming failed.")
+    except AttributeError:
+        pass
 
     assembly_text = "  __________\n___/ Assembly \_________________________________________________________________"
     lib.print_t(assembly_text)
@@ -500,7 +510,7 @@ def main(input_args, filenames):
 
     # Checks which assembly type to perform
     # Perform a hybrid assembly (with Nanopore flag `-n` and short reads `-sf` and `-sr`)
-    if input_args.nanopore is not None and filenames.shortf is not None:
+    if input_args.nanopore is not None and input_args.illumina_f is not None:
         filenames.assembly_fasta = os.path.join(assembly_path, "assembly.fasta")
         filenames.nanopore_sam = os.path.join(assembly_path, f"{input_args.array}_ONT_corr.sam")
         filenames.racon_consensus = os.path.join(assembly_path, "racon_consensus.fa")

@@ -4,7 +4,7 @@ import subprocess
 import datetime
 import requests
 import tarfile
-import tqdm
+from tqdm import tqdm
 
 """
 Helper functions for the Fungiflow pipeline.
@@ -53,7 +53,7 @@ class Files:
                 if os.path.isfile(v) is True and os.stat(v).st_size > 0:
                     print(k, "\t", v)
             except TypeError:
-                print(k," ".join(v))
+                pass
                 
 def make_path(path):
     """
@@ -217,12 +217,11 @@ def download_file(url, save_path):
         total_size = int(response.headers.get("content-length"))
         mode = "wb"  # Create new file
 
-    with open(save_path, mode) as file, tqdm(
-        total=total_size, initial=downloaded_size, unit="B", unit_scale=True, desc=save_path
-    ) as pbar:
+    with open(save_path, mode) as file, \
+        tqdm.tqdm(total=total_size, initial=downloaded_size, unit="B", unit_scale=True, desc=save_path) as progress_bar:
         for chunk in response.iter_content(chunk_size=block_size):
             file.write(chunk)
-            pbar.update(len(chunk))
+            progress_bar.update(len(chunk))
 
     # Check if the downloaded file matches the expected size
     downloaded_size = os.path.getsize(save_path)
@@ -259,7 +258,7 @@ def unpickling(inputs_txt, files_txt):
     files_f = open(files_txt,  'rb') 
     filenames = pickle.load(files_f)
 
-def check_databases(input_args):
+def check_databases(input_args, filenames_class_obj):
     """
     Checks if the necessary databases are present based on input arguments.
     Then checks if the database exists and will assign the database to input_args.
@@ -270,22 +269,22 @@ def check_databases(input_args):
     try: 
         if input_args.database_path is not None:
             if input_args.its is True:
-                its_db = os.path.join(input_args.database_path, "ncbi-its")
+                its_db = os.path.abspath(os.path.join(input_args.database_path, "ncbi-its"))
             if input_args.kraken2 is True:
-                kraken2_db = os.path.join(input_args.database_path, "kraken2")
+                kraken2_db = os.path.abspath(os.path.join(input_args.database_path, "kraken2"))
             if input_args.eggnog is True:
-                eggnog_db = os.path.join(input_args.database_path, "eggnog")
+                eggnog_db = os.path.abspath(os.path.join(input_args.database_path, "eggnog"))
         else:
             try:
-                its_db = input_args.its_db
+                its_db = os.path.abspath(input_args.its_db)
             except AttributeError:
                 pass
             try: 
-                kraken2_db = input_args.kraken2_db
+                kraken2_db = os.path.abspath(input_args.kraken2_db)
             except AttributeError:
                 pass
             try: 
-                eggnog_db = input_args.eggnog_db
+                eggnog_db = os.path.abspath(input_args.eggnog_db)
             except AttributeError:
                 pass
     except IndexError:
@@ -304,7 +303,7 @@ def check_databases(input_args):
             Please supply a path via `--its_db` or run install.py again.") is False:
             c.append(its_db)
         else:
-            input_args.its_db = its_db
+            filenames_class_obj.its_db = its_db
         print(its_db)
     except UnboundLocalError:
         pass
@@ -316,7 +315,7 @@ def check_databases(input_args):
             Please supply a path via `--kraken2_db` or run install.py again.") is False:
             c.append(kraken2_db)
         else:
-            input_args.kraken2_db = kraken2_db    
+            filenames_class_obj.kraken2_db = kraken2_db    
         print(kraken2_db)
     except UnboundLocalError:
         pass
@@ -330,7 +329,7 @@ def check_databases(input_args):
             Please supply a path via `--eggnog_db` or run install.py again.") is False:
             c.append(eggnog_db)
         else:
-            input_args.eggnog_db = eggnog_db    
+            filenames_class_obj.eggnog_db = eggnog_db    
         print(eggnog_db)
     except UnboundLocalError:
         pass

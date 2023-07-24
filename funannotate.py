@@ -139,7 +139,7 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
     stderr = os.path.join(eggnog_path,f"{input_args.array}_eggnog_annotate.err")
     output_prefix = os.path.join(eggnog_path,input_args.array)
     lib.print_n("Annotating CDS with eggnog mapper")
-    cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",input_args.eggnog_db, \
+    cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",filenames.eggnog_db, \
         "-o",output_prefix,"--tax_scope","4751,33154,2759,1"]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     # If there is sufficient memory, load the entire diamond DB into memory
@@ -148,7 +148,7 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
     if os.path.isfile(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits")) is True: cmd = cmd + ["--resume"]
     try:
         lib.execute(cmd,stdout,stderr)
-        lib.file_exists(filenames.eggnog_annotations, \
+        lib.file_exists_exit(filenames.eggnog_annotations, \
             "CDS successfully annotated with eggnog mapper","eggnog mapper failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
         print(e.returncode)
@@ -199,7 +199,7 @@ def funannotate_annotate(input_args,filenames,funannotate_path):
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     try:
         lib.execute(cmd,stdout,stderr)
-        lib.file_exists(filenames.funannotate_func_gbk, \
+        lib.file_exists_exit(filenames.funannotate_func_gbk, \
             "CDS successfully annotated with Funannotate annotate", \
                 "Funannotate annotate failed... check the logs and your inputs")
     except subprocess.CalledProcessError as e:
@@ -244,7 +244,7 @@ def main(input_args,filenames):
     if lib.file_exists(filenames.funannotate_gbk,"","") is True \
         and lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
         eggnog_annotate(input_args,filenames,eggnog_path)
-    if lib.file_exists(filenames.funannotate_func_gbk,"Functional annotation with Funannotate! Skipping...","") is False:
+    if lib.file_exists(filenames.funannotate_func_gbk,"Functional annotation with Funannotate already performed! Skipping...","") is False:
         funannotate_annotate(input_args,filenames,funannotate_path)
 
     lib.print_n("Changing back to main directory")
