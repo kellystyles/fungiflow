@@ -347,20 +347,16 @@ def parse_antismash(input_args, filenames):
     flat = {}
     flat["ID"] = input_args.array
     flat["BGC_count"] = str(df.shape[0])
-    print(flat)
     flat["contig_edge_proportion"] = round(int(df['partial'].value_counts().loc["True"]) / int(df['partial'].size), 2)
     flat["kc_proportion"] = round(len(df[df['kc_mibig_acc'] != '']) / int(df['kc_mibig_acc'].size), 2)
-
     bgc_list = []
     bgc_list.append(df['BGC_type'].unique().tolist())
     flat["BGC_types"] = bgc_list
-
     flat["BGC_mean_length"] = round(df['BGC_length'].mean(), 2)
     flat["BGC_median_length"] = round(df['BGC_length'].median(), 2)
     flat["total_BGC_length"] = round(df['BGC_length'].sum(), 2)
-    print(flat)
     flat_df = pd.DataFrame.from_dict(flat)
-    print(flat_df)    
+ 
     return flat_df
 
     #except KeyError:
@@ -465,14 +461,10 @@ def main(input_args,filenames):
         # If the antiSMASH JSON file exists, parse it and plot some figures
         # Might need to add in an exception to catch any errors arising from trying to parse an incomplete antiSMASH run
         try:
-            print("plotting1")
             bgc_df = parse_antismash(input_args, filenames)
-            print(bgc_df)
             final_df = final_df.merge(bgc_df, on="ID")
             final_df.drop(columns=["ID"])
-            print("plotting2")
             print("plotting the plots")
-
             plot_strip(bgc_df, input_args, results_path)
             plot_violin(bgc_df, input_args, results_path)
         except TypeError:
@@ -493,4 +485,3 @@ def main(input_args,filenames):
 
 if __name__ == '__main__':
     main()
-

@@ -241,9 +241,10 @@ def main(input_args,filenames):
         funannotate_mask(input_args,filenames)
     if lib.file_exists(filenames.funannotate_gbk,"Assembly genes already predicted with Funannotate! Skipping...","") is False:
         funannotate_predict(input_args,filenames,funannotate_path)
-    if lib.file_exists(filenames.funannotate_gbk,"","") is True \
-        and lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
-        eggnog_annotate(input_args,filenames,eggnog_path)
+    if input_args.eggnog is True:
+        if lib.file_exists(filenames.funannotate_gbk,"","") is True \
+            and lib.file_exists(filenames.eggnog_annotations,"Functional annotation already completed with eggnog","") is False:
+            eggnog_annotate(input_args,filenames,eggnog_path)
     if lib.file_exists(filenames.funannotate_func_gbk,"Functional annotation with Funannotate already performed! Skipping...","") is False:
         funannotate_annotate(input_args,filenames,funannotate_path)
 

@@ -22,7 +22,7 @@ def find_adapters(input_args, filenames, trimmed_path):
     adapter_sh = os.path.join(os.path.dirname(os.path.realpath(__file__)), "adap_ID.sh")
 
     lib.print_h(f"Identifying adapter sequences in {input_args.array} reads")
-    cmd = ["bash", adapter_sh, filenames.shortf, filenames.adapter_file]
+    cmd = [f"./{adapter_sh}", filenames.shortf, filenames.adapter_file]
     cmd2 = ["bash", adapter_sh, filenames.shortr, filenames.adapter_file]
 
     lib.execute(cmd, stdout, stderr)
