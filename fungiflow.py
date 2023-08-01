@@ -8,7 +8,7 @@ import assembly, funannotate, post_analysis
 
 """
 Main script of the Fungiflow pipeline.
-USAGE: python3 fungiflow -d DIRECTORY -if ILLUMINA_F -ir ILLUMINA_R -a ARRAY -c CPUS -m MEMORY [EXTRA ARGUMENTS]
+USAGE: python3 fungiflow -d DIRECTORY -if ILLUMINA_F -ir ILLUMINA_R -a ARRAY -c CPUS -m MEMORY [OPTIONAL ARGUMENTS]
 """
 
 def get_args():
@@ -16,48 +16,59 @@ def get_args():
     
     try:
         parser = argparse.ArgumentParser(
-            description="Fungiflow - the automated eukaryotic genomic pipeline for fungi.")
+            description="Fungiflow - the reproducible genomics pipeline for fungi.")
         parser.add_argument('-d', '--directory', action='store',
                             help='Working directory path.', type=str, required=True)     
         parser.add_argument('-if', '--illumina_f', action='store', default=None,
                             help='Illumina short forward reads path', type=str, required=False)
         parser.add_argument('-ir', '--illumina_r', action='store', default=None,
                             help='Illumina short reverse reads path', type=str, required=False)
+        parser.add_argument('-n', '--nanopore', action='store', default=None,
+                            help='Path to MinION reads.', type=str, required=False)
         parser.add_argument('-a', '--array', action='store',
-                            help='a unique value', type=str, required=True)
+                            help='an informative and unique string', type=str, required=True)
         parser.add_argument('-c', '--cpus', action='store',
                             help='Number of threads to use', type=str, required=True)
         parser.add_argument('-m', '--mem', action='store',
                             help='Amount of memory to use (in GB)', type=str, required=True)
-        parser.add_argument('-ant', '--antismash', action='store_true', required=False,
-                            help='Add this argument if you would like to search the assembly for BGCs')
-        parser.add_argument('-f', '--funannotate', action='store_true', required=False,
-                            help='Add this argument if you would like to annotate the assembly')
-        parser.add_argument('-s', '--singularity_image', action='store', required=False,
-                            help='Primary Singularity image for Fungiflow', type=str)
+
+        # Create mutually exclusive groups for various modules and their database paths
+        # e.g., '-edb' cannot be supplied without '-e'
         parser.add_argument('-data', '--database_path', action='store', required=False, default=None,
                             help='Path to installed databases', type=str)
-        parser.add_argument('-sf', '--singularity_funannotate', action='store',
+        parser.add_argument('-s', '--singularity_image', action='store', required=False,
+                            help='Primary Singularity image for Fungiflow', type=str)
+        fun_g = parser.add_mutually_exclusive_group()        
+        fun_g.add_argument('-f', '--funannotate', action='store_true', required=False,
+                            help='Add this argument if you would like to annotate the assembly')
+        fun_g.add_argument('-sf', '--singularity_funannotate', action='store',
                             help='Singularity image for Funannotate', type=str, required=False)
-        parser.add_argument('-sa', '--singularity_antismash', action='store',
+        ant_g = parser.add_mutually_exclusive_group()   
+        ant_g.add_argument('-ant', '--antismash', action='store_true', required=False,
+                            help='Add this argument if you would like to search the assembly for BGCs')
+        ant_g.add_argument('-sa', '--singularity_antismash', action='store',
                             help='Singularity image for antiSMASH', type=str, required=False)
-        parser.add_argument('-its', '--its', action='store_true', required=False,
+        
+        egg_g = parser.add_mutually_exclusive_group()
+        egg_g.add_argument('-e', '--eggnog', action='store_true', required=False,
+                        help='Functionally annotate the assembly proteins with eggnog. \
+                                Part of annotation module.')
+        egg_g.add_argument('-edb', '--eggnog_db', action='store', required=False, 
+                            help='Path to alternative eggnog database for eggnog.', type=str)
+        its_g = parser.add_mutually_exclusive_group()
+        its_g.add_argument('-its', '--its', action='store_true', required=False,
                             help='Search assembly for ITS sequences. Part of post-analysis module.')
-        parser.add_argument('-k', '--kraken2', action='store_true', required=False,
+        its_g.add_argument('-idb', '--its_db', action='store', required=False,
+                            help='Path to alternative ITS_refseq BLASTn database.', type=str)
+        kraken_g = parser.add_mutually_exclusive_group()        
+        kraken_g.add_argument('-k', '--kraken2', action='store_true', required=False,
                             help='Run trimmed reads against Kraken2 standard database. \
                                 Will save unclassified reads (i.e., not matching the standard database), \
                                     which will be used for assembly. Part of taxonomic module.')
-        parser.add_argument('-e', '--eggnog', action='store_true', required=False,
-                            help='Functionally annotate the assembly proteins with eggnog. \
-                                Part of annotation module.')
-        parser.add_argument('-idb', '--its_db', action='store', required=False,
-                            help='Path to alternative ITS_refseq BLASTn database.', type=str)
-        parser.add_argument('-kdb', '--kraken2_db', action='store', required=False,
+        kraken_g.add_argument('-kdb', '--kraken2_db', action='store', required=False,
                             help='Path to alternative Kraken2 standard database.', type=str)
-        parser.add_argument('-edb', '--eggnog_db', action='store', required=False, 
-                            help='Path to alternative eggnog database for eggnog.', type=str)
-        parser.add_argument('-n', '--nanopore', action='store', default=None,
-                            help='Path to MinION reads.', type=str, required=False)
+        
+        # optional arguments
         parser.add_argument('-t', '--type', action='store', default="isolate", required=False, 
                             help='Sequence data source type. Accepted arguments are \
                             \'isolate\' and \'metagenomic\'', type=str, choices=['isolate', 'metagenomic'])

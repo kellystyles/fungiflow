@@ -139,7 +139,7 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
     stderr = os.path.join(eggnog_path,f"{input_args.array}_eggnog_annotate.err")
     output_prefix = os.path.join(eggnog_path,input_args.array)
     lib.print_n("Annotating CDS with eggnog mapper")
-    cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",filenames.eggnog_db, \
+    cmd = ["emapper.py","-m","diamond","-i",filenames.funannotate_prots,"--data_dir",input_args.eggnog_db, \
         "-o",output_prefix,"--tax_scope","4751,33154,2759,1"]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     # If there is sufficient memory, load the entire diamond DB into memory

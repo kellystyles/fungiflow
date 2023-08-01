@@ -22,10 +22,10 @@ def find_adapters(input_args, filenames, trimmed_path):
     adapter_sh = os.path.join(os.path.dirname(os.path.realpath(__file__)), "adap_ID.sh")
 
     lib.print_h(f"Identifying adapter sequences in {input_args.array} reads")
-    cmd = [f"./{adapter_sh}", filenames.shortf, filenames.adapter_file]
+    cmd1 = ["bash", adapter_sh, filenames.shortf, filenames.adapter_file]
     cmd2 = ["bash", adapter_sh, filenames.shortr, filenames.adapter_file]
 
-    lib.execute(cmd, stdout, stderr)
+    lib.execute(cmd1, stdout, stderr)
     lib.execute(cmd2, stdout, stderr)
 
 def trimmomatic(input_args, filenames, trimmed_path):
@@ -425,7 +425,10 @@ def main(input_args, filenames):
         filenames.adapter_file = os.path.join(trimmed_path, f"{str(input_args.array)}_adapters.fasta")
         if lib.file_exists(filenames.adapter_file, "Adapters already identified! Skipping...", "Searching for adapter sequences in short reads") is False:
             find_adapters(input_args, filenames, trimmed_path)
-            lib.file_exists_exit(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
+            if os.path.isfile(filenames.adapter_file) is False:
+                print("No adapters identified.")
+            else:
+                lib.file_exists(filenames.adapter_file, "Adapters identified!", "Adapters not successfully extracted... check the logs and your inputs")
 
         filenames.trimmedf = os.path.join(trimmed_path, f"{input_args.array}_trimmed_1P.fq.gz")
         filenames.trimmedr = os.path.join(trimmed_path, f"{input_args.array}_trimmed_2P.fq.gz")
@@ -476,9 +479,9 @@ def main(input_args, filenames):
 
     # Trim long reads
     try:    
-        if input_args.nanopore is not None:
+        if getattr(input_args, 'nanopore', None) is not None:
             # Correct long reads with short reads if both are supplied
-            if input_args.illumina_f is True and input_args.illumina_r is True:
+            if getattr(input_args, 'illumina_f', None) is not None and getattr(input_args, 'illumina_r', None) is not None:
                 filenames.nanopore = os.path.abspath(input_args.nanopore)
                 filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq")
                 filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
@@ -488,17 +491,15 @@ def main(input_args, filenames):
                 if lib.file_exists(filenames.nanopore_corr, "Long reads already trimmed and corrected! Skipping...", "") == False:
                     long_read_trim(input_args, filenames, trimmed_path)
                     lib.file_exists_exit(filenames.nanopore_corr, "Long reads trimmed and corrected!", "Long read trimming and correction failed.")
-            # Else trim and filter just the long reads alone
-    except AttributeError:
-        pass            
-    try:
-        filenames.nanopore = os.path.abspath(input_args.nanopore)
-        filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
-        filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
-        filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
-        if lib.file_exists(filenames.nanopore_length_filtered, "Long reads already trimmed! Skipping...", "") == False:
-            long_read_trim(input_args, filenames, trimmed_path)
-            lib.file_exists_exit(filenames.nanopore_length_filtered, "Long reads trimmed!", "Long read trimming failed.")
+            # Else trim and filter just the long reads without correction
+            else:
+                filenames.nanopore = os.path.abspath(input_args.nanopore)
+                filenames.nanopore_trimmed = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fq") 
+                filenames.nanopore_fasta = os.path.join(trimmed_path, f"{input_args.array}_ONT_trimmed.fa")
+                filenames.nanopore_length_filtered = os.path.join(trimmed_path, f"{input_args.array}_lf.fa")
+                if lib.file_exists(filenames.nanopore_length_filtered, "Long reads already trimmed! Skipping...", "") == False:
+                    long_read_trim(input_args, filenames, trimmed_path)
+                    lib.file_exists_exit(filenames.nanopore_length_filtered, "Long reads trimmed!", "Long read trimming failed.")
     except AttributeError:
         pass
 
