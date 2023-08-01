@@ -19,14 +19,14 @@ def get_args():
             description="Fungiflow - the reproducible genomics pipeline for fungi.")
         parser.add_argument('-d', '--directory', action='store',
                             help='Working directory path.', type=str, required=True)     
+        parser.add_argument('-a', '--array', action='store',
+                            help='an informative and unique string', type=str, required=True)
         parser.add_argument('-if', '--illumina_f', action='store', default=None,
                             help='Illumina short forward reads path', type=str, required=False)
         parser.add_argument('-ir', '--illumina_r', action='store', default=None,
                             help='Illumina short reverse reads path', type=str, required=False)
         parser.add_argument('-n', '--nanopore', action='store', default=None,
                             help='Path to MinION reads.', type=str, required=False)
-        parser.add_argument('-a', '--array', action='store',
-                            help='an informative and unique string', type=str, required=True)
         parser.add_argument('-c', '--cpus', action='store',
                             help='Number of threads to use', type=str, required=True)
         parser.add_argument('-m', '--mem', action='store',
@@ -38,34 +38,29 @@ def get_args():
                             help='Path to installed databases', type=str)
         parser.add_argument('-s', '--singularity_image', action='store', required=False,
                             help='Primary Singularity image for Fungiflow', type=str)
-        fun_g = parser.add_mutually_exclusive_group()        
-        fun_g.add_argument('-f', '--funannotate', action='store_true', required=False,
+        parser.add_argument('-f', '--funannotate', action='store_true', required=False,
                             help='Add this argument if you would like to annotate the assembly')
-        fun_g.add_argument('-sf', '--singularity_funannotate', action='store',
+        parser.add_argument('-sf', '--singularity_funannotate', action='store',
                             help='Singularity image for Funannotate', type=str, required=False)
-        ant_g = parser.add_mutually_exclusive_group()   
-        ant_g.add_argument('-ant', '--antismash', action='store_true', required=False,
+        parser.add_argument('-ant', '--antismash', action='store_true', required=False,
                             help='Add this argument if you would like to search the assembly for BGCs')
-        ant_g.add_argument('-sa', '--singularity_antismash', action='store',
+        parser.add_argument('-sa', '--singularity_antismash', action='store',
                             help='Singularity image for antiSMASH', type=str, required=False)
         
-        egg_g = parser.add_mutually_exclusive_group()
-        egg_g.add_argument('-e', '--eggnog', action='store_true', required=False,
+        parser.add_argument('-e', '--eggnog', action='store_true', required=False,
                         help='Functionally annotate the assembly proteins with eggnog. \
                                 Part of annotation module.')
-        egg_g.add_argument('-edb', '--eggnog_db', action='store', required=False, 
+        parser.add_argument('-edb', '--eggnog_db', action='store', required=False, 
                             help='Path to alternative eggnog database for eggnog.', type=str)
-        its_g = parser.add_mutually_exclusive_group()
-        its_g.add_argument('-its', '--its', action='store_true', required=False,
+        parser.add_argument('-its', '--its', action='store_true', required=False,
                             help='Search assembly for ITS sequences. Part of post-analysis module.')
-        its_g.add_argument('-idb', '--its_db', action='store', required=False,
+        parser.add_argument('-idb', '--its_db', action='store', required=False,
                             help='Path to alternative ITS_refseq BLASTn database.', type=str)
-        kraken_g = parser.add_mutually_exclusive_group()        
-        kraken_g.add_argument('-k', '--kraken2', action='store_true', required=False,
+        parser.add_argument('-k', '--kraken2', action='store_true', required=False,
                             help='Run trimmed reads against Kraken2 standard database. \
                                 Will save unclassified reads (i.e., not matching the standard database), \
                                     which will be used for assembly. Part of taxonomic module.')
-        kraken_g.add_argument('-kdb', '--kraken2_db', action='store', required=False,
+        parser.add_argument('-kdb', '--kraken2_db', action='store', required=False,
                             help='Path to alternative Kraken2 standard database.', type=str)
         
         # optional arguments
@@ -85,12 +80,26 @@ def get_args():
         parser.add_argument('--print_workflow', action='store_true', default="False", required=False, 
                             help='Will print a summary of the workflow upon completion of the script')                                                        
 
+        args = parser.parse_args()
+
+        # Enforce additional argument checks
+        if args.singularity_funannotate and not args.funannotate:
+            parser.error("argument -sf/--singularity_funannotate: requires -f/--funannotate")
+        if args.singularity_antismash and not args.antismash:
+            parser.error("argument -sa/--singularity_antismash: requires -ant/--antismash")
+        if args.eggnog_db and not args.eggnog:
+            parser.error("argument -edb/--eggnog_db: requires -e/--eggnog")
+        if args.kraken2_db and not args.kraken2:
+            parser.error("argument -kdb/--kraken2_db: requires -k/--kraken")
+        if args.its_db and not args.its:
+            parser.error("argument -idb/--its_db: requires -its/--its")
+
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
         parser.print_help(sys.stderr)
         sys.exit()
 
-    return parser.parse_args()
+    return args
 
 ### Begin Main Script ###
 def main():
