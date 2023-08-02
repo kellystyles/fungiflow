@@ -143,9 +143,9 @@ def eggnog_annotate(input_args,filenames,eggnog_path):
         "-o",output_prefix,"--tax_scope","4751,33154,2759,1"]
     if len(filenames.funannotate) > 0: cmd = filenames.funannotate + cmd
     # If there is sufficient memory, load the entire diamond DB into memory
-    if int(input_args.mem) > 45: cmd = cmd + ["--dbmem"]
+    if int(input_args.mem) > 45000: cmd = cmd + ["--dbmem"]
     # If a hits file from a previous run is present, resume the run
-    if os.path.isfile(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits")) is True: cmd = cmd + ["--resume"]
+    if lib.file_exists(os.path.join(eggnog_path, f"{input_args.array}.emapper.hits"), "Existing EggNog hits file found. Resuming previous run...", ""): cmd = cmd + ["--resume"]
     try:
         lib.execute(cmd,stdout,stderr)
         lib.file_exists_exit(filenames.eggnog_annotations, \

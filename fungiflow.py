@@ -104,7 +104,7 @@ def get_args():
 ### Begin Main Script ###
 def main():
     input_args = get_args()
-    lib.print_t("⁂⁂⁂⁂⁂⁂⁂⁂ Script Begins ⁂⁂⁂⁂⁂⁂⁂⁂  \n")
+    lib.print_t("-+-+-+-+-+-+- Script Begins -+-+-+-+-+-+-\n")
     start_time = datetime.datetime.now()
     print(input_args)
 
@@ -135,7 +135,7 @@ def main():
     lib.print_h("Output files and variables are listed below:")
     filenames.printer()
     print("\n")
-    lib.print_tu(f"⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished in {datetime.datetime.now() - start_time} ⁂⁂⁂⁂⁂⁂⁂⁂")
+    lib.print_tu(f"-+-+-+-+-+-+- Fungiflow completed in {datetime.datetime.now() - start_time} -+-+-+-+-+-+-")
 
 
     # TEST CODE FOR GENERATING WORKFLOW DESCRIPTION

@@ -144,11 +144,14 @@ def execute(command, stdout, stderr):
     """
     try:
         print(" ".join(command))
-        with open(stdout,  "wt") as out,  open(stderr,  "wt") as err:
-            subprocess.run(command, stdout=out, stderr=err)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)   
+        with open(stdout,  "wt", encoding="utf-8") as out,  open(stderr,  "wt", encoding="utf-8") as err:
+            subprocess.run(command, stdout=out, stderr=err, check=False)
+    except subprocess.CalledProcessError as error:
+        print("An error occurred while running the command:")
+        print(f"Command: {error.cmd}")
+        print(f"Exit code: {error.returncode}")
+        print(f"Output: {error.output}")
+        print(f"Error: {error.stderr}")
         print(sys.exc_info()[1])
 
 def execute_shell(command_list, stdout, stderr):
@@ -158,15 +161,15 @@ def execute_shell(command_list, stdout, stderr):
     
     Commands must be in string format, with spaces included
     """
-    
+
     # opens the stdout and stderr files for writing
     try:
-        with open(stdout,  "wt") as out,  open(stderr,  "wt") as err:
+        with open(stdout,  "wt", encoding="utf-8") as out,  open(stderr,  "wt", encoding="utf-8") as err:
             n = 2
             # If just a single command in the list will execute without PIPE
             if len(command_list) == 1:
                 print(command_list[0])
-                subprocess.run(command_list[0], stdout=out, stderr=err, shell=True)
+                subprocess.run(command_list[0], stdout=out, stderr=err, shell=True, check=False)
             else:
                 # takes first command in command_list as first command, notice no `input=` as with later processes
                 # uses `exec` rather than subprocess.run to enable output to be piped to stdout
@@ -186,10 +189,13 @@ def execute_shell(command_list, stdout, stderr):
                     last = f"proc{n} = subprocess.run([\"{command_list[-1]}\"], input=proc{n-1}.stdout, stdout=out, stderr=err, shell=True)"
                     print(command_list[-1])
                     exec(last)
-    except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)   
-        print(sys.exc_info()[1])     
+    except subprocess.CalledProcessError as error:
+        print("An error occurred while running the command:")
+        print(f"Command: {error.cmd}")
+        print(f"Exit code: {error.returncode}")
+        print(f"Output: {error.output}")
+        print(f"Error: {error.stderr}")
+        print(sys.exc_info()[1])
 
 def download_file(url, save_path):
     """
@@ -207,12 +213,12 @@ def download_file(url, save_path):
         # Get the size of the existing file
         downloaded_size = os.path.getsize(save_path)
         headers = {"Range": f"bytes={downloaded_size}-"}
-        response = requests.get(url, headers=headers, stream=True)
+        response = requests.get(url, headers=headers, stream=True, timeout=10000)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length")) + downloaded_size
         mode = "ab"  # Append to existing file
     else:
-        response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True,  timeout=10000)
         response.raise_for_status()
         total_size = int(response.headers.get("content-length"))
         mode = "wb"  # Create new file
@@ -236,28 +242,6 @@ def extract_tar_gz(file_path, extract_path):
     with tarfile.open(file_path, 'r:gz') as tar:
         tar.extractall(extract_path)
 
-def pickling(input_args, filenames):
-    """
-    Function that saves the class objects `input_args` and `filenames` to a TXT 
-    file. 
-    """
-    inputs = open("input_args.txt",  'wb')
-    pickle.dump(input_args, inputs)
-    files = open("filenames.txt",  'wb')
-    pickle.dump(filenames, files)
-    inputs.close()
-    files.close()
-
-def unpickling(inputs_txt, files_txt):
-    """
-    Function that opens previously pickled class objects,  `input_args` and 
-    `filenames`,  from TXT files.
-    """
-    inputs_f = open(inputs_txt,  'rb') 
-    input_args = pickle.load(inputs_f)
-    files_f = open(files_txt,  'rb') 
-    filenames = pickle.load(files_f)
-
 def check_databases(input_args, filenames_class_obj):
     """
     Checks if the necessary databases are present based on input arguments.
@@ -266,7 +250,7 @@ def check_databases(input_args, filenames_class_obj):
     # TRY statements to check what DB paths are supplied
     # In the case where the `--database_path` argument is not supploed, 
     # the supplied individual database paths will be used
-    try: 
+    try:
         if input_args.database_path is not None:
             if input_args.its is True:
                 its_db = os.path.abspath(os.path.join(input_args.database_path, "ncbi-its"))
