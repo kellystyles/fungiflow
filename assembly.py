@@ -59,6 +59,7 @@ def fastqc(input_args, filenames, trimmed_path):
 
     stdout = os.path.join(trimmed_path, f"{input_args.array}_fastqc.out")
     stderr = os.path.join(trimmed_path, f"{input_args.array}_fastqc.err")
+
     lib.print_n("Assessing reads with FastQC")
     cmd = ["fastqc", "-o", trimmed_path, \
         input_args.illumina_f, input_args.illumina_r, \
@@ -70,8 +71,10 @@ def fastqc(input_args, filenames, trimmed_path):
             "fastqc completed", "fastqc failed")
 
 def porechop(input_args, filenames, trimmed_path):
+
     stdout = os.path.join(trimmed_path, f"{input_args.array}_porechop.out")
     stderr = os.path.join(trimmed_path, f"{input_args.array}_porechop.err")
+    
     # Trimming long reads with PORECHOP
     cmd = ["porechop", "-i", filenames.nanopore, "-o", filenames.nanopore_trimmed, "--adapter_threshold", "96", "--no_split"]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
@@ -141,8 +144,6 @@ def long_read_trim(input_args, filenames, trimmed_path):
     Input:      raw Nanopore FASTQ reads file.
     Output:     corrected Nanopore FASTA reads file.
     """
-    stdout = os.path.join(trimmed_path, f"{input_args.array}_long_read_trim.out")
-    stderr = os.path.join(trimmed_path, f"{input_args.array}_long_read_trim.err")
 
     lib.print_h(f"Preparing long reads {input_args.nanopore} for assembly")
     if lib.file_exists(filenames.nanopore_trimmed, \
