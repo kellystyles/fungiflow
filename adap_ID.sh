@@ -14,8 +14,7 @@ Written by Matt Storey, edited by Kelly Styles.
 
 #CLI arguements input .fq.gz file to be analysed for adapters
 FILE="$1"
-ADAP_FA="$2"
-echo "$FILE" "$ADAP_FA"
+echo "$FILE" "$2"
 
 # array of adapters (from trimmomatic etc)
 declare -A ADAP=([>Reverse_adapter]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATCTCGTATGCCGTCTTCTGCTTG"
@@ -178,7 +177,7 @@ declare -A ADAP=([>Reverse_adapter]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCACATCACGATC
 [>PE2]="GTGACTGGAGTTCAGACGTGTGCTCTTCCGATCT"
 [>PE2_rc]="AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC")
 
-#loop opver the array of adapters and grep them against the input file. zcat takes .gz as imput, could set up check for file type and make allowences for uncompressed files?
+#loop opver the array of adapters and grep them against the input file. zcat takes .gz as imput, could set up check for file type and make allowances for uncompressed files?
 for i in ${!ADAP[@]}; do
     VAL="$( zcat $FILE | head -400000 | grep "${ADAP[$i]}" | wc -l )"
     if [ $VAL -gt 100 ]
@@ -187,7 +186,7 @@ for i in ${!ADAP[@]}; do
         echo "This adapter was found:"
         echo "$i"
         echo "${ADAP[$i]}"
-        echo "$i" >> "$ADAP_FA"
-        echo "${ADAP[$i]}" >> "$ADAP_FA"
+        echo "$i" >> "$2"
+        echo "${ADAP[$i]}" >> "$2"
    fi
 done

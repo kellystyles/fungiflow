@@ -26,7 +26,12 @@ def itsx(input_args,filenames,itsx_path):
 
     cmd = ["ITSx","-i",filenames.assembly_fasta,"-o",os.path.join(itsx_path,input_args.array),"-t","F","--cpu",input_args.cpus,"--preserve","--only_full","T","--temp",itsx_path]
     if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
-    if len(input_args.nanopore) > 0: cmd = cmd + ["--nhmmer", "T"]
+    
+    # use nhmmer to search assemby if the assembly incorporates long reads
+    # as these will likely be more contiguous and this is a memory efficient
+    # approach
+    if input_args.nanopore is not None: cmd = cmd + ["--nhmmer", "T"]
+    
     try:
         lib.print_n("Extracting the ITS sequence with ITSx")
         lib.execute(cmd,stdout,stderr)
@@ -45,7 +50,9 @@ def blastn(input_args,filenames,blast_path):
     stdout = os.path.join(blast_path,f"{input_args.array}.out")
     stderr = os.path.join(blast_path,f"{input_args.array}.err")
 
-    cmd = f"blastn -db {filenames.its_db} -query {filenames.its_fasta} -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" -max_target_seqs 5 -out {filenames.blast_out}"
+    cmd = f"blastn -db {filenames.its_db} -query {filenames.its_fasta} \
+        -num_threads {input_args.cpus} -outfmt \"6 qacc sscinames sacc pident bitscore evalue stitle\" \
+        -max_target_seqs 5 -out {filenames.blast_out}"
     if len(filenames.singularity) > 0: cmd = str(" ".join(filenames.singularity)) + " " + cmd
     commands = [cmd]
     try:
@@ -367,6 +374,8 @@ def main(input_args,filenames):
     lib.print_h("Initializing \'post analysis\' module...")
     post_start_time = datetime.datetime.now()
     final_df = pd.DataFrame()
+    
+    # run QUAST
     quast_text = "  _______\n___/ Quast \____________________________________________________________________"
     lib.print_t(quast_text)
     
@@ -379,9 +388,14 @@ def main(input_args,filenames):
         quast(input_args,filenames,quast_path)
     final_df = parse_quast(filenames,input_args.array)
 
-    if input_args.its_db is not None:
+    # run ITSx and lookup ITS if the 'its' parameter is selected
+    if input_args.its is not None:
         tax_lookup_text = "  ___________________\n___/  Taxonomy Lookup  \________________________________________________________"        
         lib.print_t(tax_lookup_text)
+        
+        # export the ITS DB path otherwise the BLASTn cmd will fail due to it not
+        # being able to find the taxdb files
+        os.environ['BLASTDB'] = input_args.its_db
 
         itsx_path = os.path.join(input_args.directory_new,"ITSx")
         lib.make_path(itsx_path)

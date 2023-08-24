@@ -1,0 +1,21 @@
+package:
+  name: fungiflow-funannotate
+  version: 0.1.0
+
+name: fungiflow-funannotate
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - funannotate
+  - eggnog-mapper
+  - ca-certificates
+  - certifi
+  - openssl
+
+about:
+  summary: "Package for Fungiflow, including all required software for the 
+  Funannotate module, excluding GeneMark-ES which needs to be installed manually."
+  license: "The license for this meta-package is BSD-2; individual tools may vary"
+  home: https://github.com/kellystyles/fungiflow

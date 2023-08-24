@@ -308,7 +308,7 @@ def check_databases(input_args, filenames_class_obj):
         taxa = os.path.join(eggnog_db, "eggnog.taxa.db")
         main = os.path.join(eggnog_db, "eggnog.db")
         prots = os.path.join(eggnog_db, "e5.proteomes.faa")
-        fungi_dmnd = os.path.join(eggnog_db, "fungi.dmnd")
+        fungi_dmnd = os.path.join(eggnog_db, "eggnog_prots.fungi.dmnd")
         if file_exists_list([dmnd, taxa, main, prots, fungi_dmnd], "eggnog DB is present", "eggnog DB is not present. \
             Please supply a path via `--eggnog_db` or run install.py again.") is False:
             c.append(eggnog_db)
@@ -325,6 +325,35 @@ def check_databases(input_args, filenames_class_obj):
         print_e("Please check your `--database_path` or other supplied database paths.")
         print_e("Try running `install.py` again.")
         sys.exit(1)
+
+# Some functions to manage conda environments for Funannotate
+def activate_conda_env(env_name):
+    command = f"conda activate {env_name}"
+    subprocess.run(command, shell=True, executable="/bin/bash", check=True)
+
+# Function to deactivate the current conda environment
+def deactivate_conda_env():
+    command = "conda deactivate"
+    subprocess.run(command, shell=True, executable="/bin/bash", check=True)
+
+def is_conda_environment_active():
+    return "CONDA_PREFIX" in os.environ
+
+def is_conda_environment_available(env_name):
+    try:
+        # Run 'conda env list' and capture the output
+        result = subprocess.run(['conda', 'env', 'list'], capture_output=True, text=True, check=True)
+        output_lines = result.stdout.splitlines()
+
+        # Check if the environment name is present in the output
+        for line in output_lines:
+            if env_name in line:
+                return True
+
+        return False
+    except subprocess.CalledProcessError:
+        # 'conda env list' command returned non-zero exit status
+        return False
 
 # Some functions that print pretty terminal output using ANSI codes
 GREEN = "\033[92m"

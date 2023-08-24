@@ -188,6 +188,14 @@ def funannotate_annotate(input_args,filenames,funannotate_path):
 
 def main(input_args,filenames):
 
+    if lib.is_conda_environment_available("fungiflow-funannotate") and getattr(input_args, 'singularity_funannotate', None) is None:
+        print("Activating the Funannotate conda environment")
+        lib.activate_conda_env("fungiflow-funannotate")
+    elif lib.is_conda_environment_available("fungiflow-funannotate") is False and getattr(input_args, 'singularity_funannotate', None) is not None:
+        print(f"Using {input_args.singularity_funannotate} to run Funannotate")
+    elif lib.is_conda_environment_available("fungiflow-funannotate") and getattr(input_args, 'singularity_funannotate', None) is not None:
+        print(f"Using {input_args.singularity_funannotate} to run Funannotate")
+
     lib.print_h("Initializing \'funannotate\' module...")
     funannotate_start_time = datetime.datetime.now()
     annotation_text = "  ____________\n___/ Annotation \_______________________________________________________________"
@@ -230,6 +238,10 @@ def main(input_args,filenames):
 
     lib.print_n("Changing back to main directory")
     os.chdir(input_args.directory_new)
+
+    if lib.is_conda_environment_active("fungiflow-funannotate"):
+        lib.deactivate_conda_env("fungiflow-funannotate")
+    
     lib.print_h(f"funannotate module completed in {datetime.datetime.now() - funannotate_start_time}")
 
 if __name__ == '__main__':

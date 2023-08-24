@@ -70,6 +70,18 @@ def fastqc(input_args, filenames, trimmed_path):
     lib.file_exists_exit(filenames.fastqc_out, \
             "fastqc completed", "fastqc failed")
 
+def nanofilt(input_args, filenames, trimmed_path):
+
+    stdout = os.path.join(trimmed_path, f"{input_args.array}_nanofilt.out")
+    stderr = os.path.join(trimmed_path, f"{input_args.array}_nanofilt.err")
+
+    # quality trimming long reads with NanoFilt
+    cmd = ["NanoFilt", "-q", input_args.minimum_quality, "-l", input_args.minimum_length]
+    if len(filenames.singularity) > 0: cmd = filenames.singularity + cmd
+    cmd = ["gunzip", "-c", filenames.nanopore, "|"] + cmd + ["|", "gzip", ">", filenames.nanopore_trimmed]
+
+    lib.execute_shell(cmd, stdout, stderr)
+
 def porechop(input_args, filenames, trimmed_path):
 
     stdout = os.path.join(trimmed_path, f"{input_args.array}_porechop.out")

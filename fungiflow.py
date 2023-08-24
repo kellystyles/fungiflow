@@ -70,6 +70,9 @@ def get_args():
         parser.add_argument('-minlen', '--minimum_length', action='store', default="2000", 
                             help='Minimum length of long-reads to retain during QC processes. \
                                 Default is 2000 bp.', type=str, required=False)
+        parser.add_argument('-minqual', '--minimum_quality', action='store', default="10", 
+                            help='Minimum average read quality score for long reads. \
+                                Default is 10.', type=str, required=False)
         parser.add_argument('-mtm', '--min_training_models', action='store', default="200", 
                             help='Mininum number of predicted models to train Augustus. \
                                 Default is 200.', type=str, required=False)

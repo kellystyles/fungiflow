@@ -168,7 +168,7 @@ def check_databases(input_databases, databases_path):
             taxa = os.path.join(eggnog_path, "eggnog.taxa.db")
             main = os.path.join(eggnog_path, "eggnog.db")
             prots = os.path.join(eggnog_path, "e5.proteomes.faa")
-            fungi_dmnd = os.path.join(eggnog_path, "fungi.dmnd")
+            fungi_dmnd = os.path.join(eggnog_path, "eggnog_prots.fungi.dmnd")
             if lib.file_exists_list([dmnd, taxa, main, prots, fungi_dmnd], "", "") is False:
                 failed.append("eggnog")
             elif lib.file_exists_list([dmnd, taxa, main, prots], "", "") is True:
