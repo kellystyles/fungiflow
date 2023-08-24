@@ -8,7 +8,7 @@
 
 > A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
-A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline.[^2] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
 <p align="center">
 
@@ -380,7 +380,6 @@ Blobtools Module
 
 [^1]: Blin, K., Shaw, S., Kloosterman, A. M., Charlop-Powers, Z., Van Wezel, G. P., Medema, M. H., & Weber, T. (2021). antiSMASH 6.0: improving cluster detection and comparison capabilities. *Nucleic acids research*, *49*(W1), W29-W35.
 [^2]: Palmer, J., & Stajich, J. (2021). Funannotate v1. 8.3: eukaryotic genome annotation (Version 1.8. 3). *Zenodo. doi*, *10*.
-[^3]: Laetsch, D. R., & Blaxter, M. L. (2017). BlobTools: Interrogation of genome assemblies. *F1000Research*, *6*(1287), 1287.
 [^4]: Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O., & Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, 18(12), 1979-1990.
 [^5]: Andrews, S. (2010). FastQC: a quality control tool for high throughput sequence data. In: Babraham Bioinformatics, Babraham Institute, Cambridge, United Kingdom.
 [^6]: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics, 30(15), 2114-2120.  
