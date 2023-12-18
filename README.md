@@ -8,7 +8,7 @@
 
 > A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
-A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline,[^2] and can assess contamination of the assembly with the `blobtools` software.[^3] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline.[^2] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
 
 <p align="center">
 
@@ -35,11 +35,6 @@ The overall workflow is defined by several modules:
     2. Annotation and extraction of ITS regions using ITSx and BLASTn of ITS sequences (ITS_Refseq_Fungi) - *OPTIONAL*
     3. Identification of BGCs using antiSMASH (v6.1) - *OPTIONAL*
     4. Report generation
-4. **Blobplot module** - *OPTIONAL*
-    1. Minimap2 maps short reads to assembly file in BAM format
-    2. Samtools indexes the BAM file 
-    3. MegaBLAST assigns taxonomy to each contig (NCBI-nt)
-    4. Blobtools generates blobplots
 
 ## Low-coverage genome assembly
 
@@ -122,7 +117,6 @@ several hours:
 
 - Kraken2 standard database (16 GB | 1 hour): required for taxonomic filtering of short reads in Assembly module.
 - ITS_Refseq_Fungi database (162 Mb | 30 mins): required for BLASTn of extracted ITS sequences in Post-anlaysis module.
-- NCBI-nt database (132 GB | ~6 hours): required for assigning taxonomy to contigs for the Blobplots module.
 - EggNOG database (19 GB | 1 hour): required for eggnog functional annotation in Funannotate module.
 
 *Note that the databases mentioned here might differ in size from the ones stated in the workflow, as they may be more up-to-date.*
@@ -154,8 +148,8 @@ All runtime parameters can be shown using `python3 fungiflow.py --help`.
 usage: fungiflow.py [-h] -d DIRECTORY -if ILLUMINA_F -ir ILLUMINA_R -a ARRAY -c CPUS -m MEM 
                     [-ant] [-f] [-s SINGULARITY_IMAGE] [-data DATABASE_PATH] 
                     [-sf SINGULARITY_FUNANNOTATE] [-sa SINGULARITY_ANTISMASH] 
-                    [-its] [-k] [-e] [-b] [-idb ITS_DB] [-kdb KRAKEN2_DB] 
-                    [-bdb BLOB_DB] [-edb EGGNOG_DB] [-n NANOPORE] 
+                    [-its] [-k] [-e] [-idb ITS_DB] [-kdb KRAKEN2_DB] 
+                    [-edb EGGNOG_DB] [-n NANOPORE] 
                     [-t {isolate,metagenomic}] [-minlen MINIMUM_LENGTH] 
                     [-mtm MIN_TRAINING_MODELS] [--careful] 
                     [--genemark_path GENEMARK_PATH] [--print_workflow]
@@ -188,13 +182,10 @@ optional arguments:
   -k, --kraken2         Run trimmed reads against Kraken2 standard database. Will save unclassified reads (i.e., not matching the standard database), which will be used for assembly. Should not be used for a metagenomic assembly. 
                         Part of taxonomic module.
   -e, --eggnog          Functionally annotate the assembly proteins with eggnog. Part of annotation module.
-  -b, --blobplot        Run blobtools module on output assembly. Part of blobtools module.
   -idb ITS_DB, --its_db ITS_DB
                         Path to alternative ITS_refseq BLASTn database.
   -kdb KRAKEN2_DB, --kraken2_db KRAKEN2_DB
                         Path to alternative Kraken2 standard database.
-  -bdb BLOB_DB, --blob_db BLOB_DB
-                        Path to alternative NCBI-nt database for blobtools.
   -edb EGGNOG_DB, --eggnog_db EGGNOG_DB
                         Path to alternative eggnog database for eggnog.
   -n NANOPORE, --nanopore NANOPORE
@@ -304,14 +295,7 @@ project directory
 │   |   transposed_report.tsv             # output report file used by this pipeline
 |   |   report.html                       # output HTML viewer
 |   |   ...
-|
-└───blobplots
-│   │
-│   |   assembly.bam                      # short reads mapped to assembly
-|   |   assembly.bam.bai                  # index of above file
-|   |   assembly.blobDB.json              # blobtools JSON output file
-|   |   megablast.out                     # MegaBLAST output
-|   |   ...
+
 
 ```
 ### Collating data from multiple Fungiflow runs
@@ -324,7 +308,7 @@ python3 parse_all.py 'parent_directory'
 
 ## Planned implementations
 
-- Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `MegaBLAST` in the blobplots package).
+- Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `blastn` for ITS lookup).
 - Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
 - Whilst repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
 
@@ -371,16 +355,9 @@ Post-analysis Module
 | antiSMASH   | 6.0.1     | Blin et al., 2021.[^1]            |
 | ncbi-BLAST+ | 2.13.0+   | Camacho et al., 2009.[^23]         |
 
-Blobtools Module
-
-| Software    | Version | Reference                |
-|-------------|---------|--------------------------|
-| blobtools   | 1.1.1   | Laetsch & Blaxter, 2017.[^3] |
-| ncbi-BLAST+ | 2.13.0+ | Camacho et al., 2009.[^23]      |
 
 [^1]: Blin, K., Shaw, S., Kloosterman, A. M., Charlop-Powers, Z., Van Wezel, G. P., Medema, M. H., & Weber, T. (2021). antiSMASH 6.0: improving cluster detection and comparison capabilities. *Nucleic acids research*, *49*(W1), W29-W35.
 [^2]: Palmer, J., & Stajich, J. (2021). Funannotate v1. 8.3: eukaryotic genome annotation (Version 1.8. 3). *Zenodo. doi*, *10*.
-[^3]: Laetsch, D. R., & Blaxter, M. L. (2017). BlobTools: Interrogation of genome assemblies. *F1000Research*, *6*(1287), 1287.
 [^4]: Ter-Hovhannisyan, V., Lomsadze, A., Chernoff, Y. O., & Borodovsky, M. (2008). Gene prediction in novel fungal genomes using an ab initio algorithm with unsupervised training. Genome research, 18(12), 1979-1990.
 [^5]: Andrews, S. (2010). FastQC: a quality control tool for high throughput sequence data. In: Babraham Bioinformatics, Babraham Institute, Cambridge, United Kingdom.
 [^6]: Bolger, A. M., Lohse, M., & Usadel, B. (2014). Trimmomatic: a flexible trimmer for Illumina sequence data. Bioinformatics, 30(15), 2114-2120.  
