@@ -1,0 +1,47 @@
+package:
+  name: fungiflow-main
+  version: 0.1.0
+
+build:
+  noarch: python
+  number: 0
+
+extra:
+  recipe-maintainers:
+  - Kelly Styles
+
+name: fungiflow-main
+channels:
+  - agbiome
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - trimmomatic
+  - kraken2
+  - flye
+  - porechop
+  - fmlrc
+  - racon
+  - medaka
+  - polypolish
+  - itsx
+  - blast
+  - ca-certificates
+  - openssl
+  - bbtools
+  - certifi
+  - samtools
+  - pandas
+  - biopython
+  - seaborn
+  - fastqc
+  - bwa-mem2
+  - quast
+
+about:
+  summary: "Package for Fungiflow, including all required software for the 
+  Assembly and Post-Analysis modules, excluding antiSMASH."
+  license: "The license for this meta-package is BSD-2; individual tools may vary"
+  home: https://github.com/kellystyles/fungiflow

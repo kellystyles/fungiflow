@@ -1,0 +1,20 @@
+package:
+  name: fungiflow-antismash
+  version: 0.1.0
+
+name: fungiflow-antismash
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - antismash
+  - ca-certificates
+  - openssl
+  
+about:
+  summary: "Package for Fungiflow, including all required software for  
+  antiSMASH."
+  license: "The license for this meta-package is BSD-2; individual tools may vary"
+  home: https://github.com/kellystyles/fungiflow

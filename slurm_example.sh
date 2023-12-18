@@ -7,18 +7,21 @@
 #SBATCH --job-name=fungiflow
 #SBATCH -o /output/path/fungiflow_%A_%a.log
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=user@email.com
+
 
 """
 This script will run the Fungiflow pipeline
 
 Setup:
  - short reads
-    must be in fq.gz format.
+    must be in fq.gz format, with the suffix `_1.fq.gz` for forward reads
+    and `_2.fq.gz` for reverse reads
  - ONT reads
-    must be in a single fastq file.
+    must be uncompressed and in a single fastq file
+ - reads must be prefixed with SLURM_ARRAY_TASK_ID value if running in parallel
+    i.e., if using `#SBATCH --array`
 
-Parameters:
+Paramterers:
  - `-a` is the array value that will be passed to the pipeline, and the files 
     will use this as a prefix. Here I have used the SLURM_ARRAY_TASK_ID as the 
     array value as then its easier to run multiple datasets in parallel. Both

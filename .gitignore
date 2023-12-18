@@ -1,0 +1,5 @@
+__pycache__
+singularity_recipes/interproscan.def
+bld.bat
+*.yml
+collate_completion.py

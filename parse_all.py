@@ -339,7 +339,7 @@ def main():
                 busco_stats = os.path.join(main_dir, dir, "funannotate","annotate_misc","run_busco","short_summary_busco.txt")
                 parse_busco(busco_stats, df)
             elif lib.file_exists(os.path.join(main_dir, dir, "funannotate","predict_misc","busco_proteins",f"run_{dir}",f"short_summary_{dir}.txt"),"",""):
-                busco_stats = os.path.join(main_dir, dir, "funannotate","annotate_misc","run_busco","short_summary_busco.txt")
+                busco_stats = os.path.join(main_dir, dir, "funannotate","predict_misc","busco_proteins",f"run_{dir}",f"short_summary_{dir}.txt")
                 parse_busco(busco_stats, df)
         except FileNotFoundError:
             # if no BUSCO files present
