@@ -22,33 +22,87 @@ you can install a custom set of databases by adding a set of database strings to
         `--databases "kraken2,ncbi-its"`
 """
 
+
 def get_args():
     """Parse command line arguments"""
-    
+
     try:
         parser = argparse.ArgumentParser(
-            description="Fungiflow - the automated eukaryotic genomic pipeline for fungi.")
-        parser.add_argument('-d', '--directory', action='store',
-                            help='Database directory path.', type=str, default="databases", required=False)  
-        parser.add_argument('-db', '--databases', action='store',
-                            help='Databases to install. Accepted arguments are "all" or any combo of "kraken2", \
-                            "ncbi-its", or "eggnog".', type=str, default="all", required=False)   
-        parser.add_argument('-c', '--cpus', action='store',
-                            help='Number of threads to use', type=str, default="4", required=False)
-        parser.add_argument('-m', '--mem', action='store',
-                            help='Amount of memory to use (in GB)', type=str, default="8", required=False)
-        parser.add_argument('-s', '--singularity_fungiflow', action='store', default=None,
-                            help='Path to Fungiflow Singularity container', type=str, required=False)                            
-        parser.add_argument('-sfun', '--singularity_funannotate', action='store', default=None,
-                            help='Path to Funannotate Singularity container', type=str, required=False)        
+            description="Fungiflow - the automated eukaryotic genomic pipeline for fungi."
+        )
+        parser.add_argument(
+            "-d",
+            "--directory",
+            action="store",
+            help="Database directory path.",
+            type=str,
+            default="databases",
+            required=False,
+        )
+        parser.add_argument(
+            "-db",
+            "--databases",
+            action="store",
+            help='Databases to install. Accepted arguments are "all" or any combo of "kraken2", \
+                            "ncbi-its", or "eggnog".',
+            type=str,
+            default="all",
+            required=False,
+        )
+        parser.add_argument(
+            "-c",
+            "--cpus",
+            action="store",
+            help="Number of threads to use",
+            type=str,
+            default="4",
+            required=False,
+        )
+        parser.add_argument(
+            "-m",
+            "--mem",
+            action="store",
+            help="Amount of memory to use (in GB)",
+            type=str,
+            default="8",
+            required=False,
+        )
+        parser.add_argument(
+            "-s",
+            "--singularity_fungiflow",
+            action="store",
+            default=None,
+            help="Path to Fungiflow Singularity container",
+            type=str,
+            required=False,
+        )
+        parser.add_argument(
+            "-sfun",
+            "--singularity_funannotate",
+            action="store",
+            default=None,
+            help="Path to Funannotate Singularity container",
+            type=str,
+            required=False,
+        )
     except argparse.ArgumentError:
         lib.print_e("An exception occurred with argument parsing. Check your inputs.")
         exit(1)
 
     def __str__(self):
-        return  str(self.__class__) + '\n' + '\n'.join((str(item) + ' = ' + str(self.__dict__[item]) for item in sorted(self.__dict__)))
+        return (
+            str(self.__class__)
+            + "\n"
+            + "\n".join(
+                (
+                    str(item) + " = " + str(self.__dict__[item])
+                    for item in sorted(self.__dict__)
+                )
+            )
+        )
 
     return parser.parse_args()
+
 
 def install_kraken2_db(database_path):
     """
@@ -58,7 +112,7 @@ def install_kraken2_db(database_path):
     """
 
     # GitHub URL
-    url = 'https://github.com/BenLangmead/aws-indexes/blob/master/docs/k2.md'
+    url = "https://github.com/BenLangmead/aws-indexes/blob/master/docs/k2.md"
 
     # Send a GET request to fetch the HTML content
     response = requests.get(url)
@@ -78,8 +132,9 @@ def install_kraken2_db(database_path):
         lib.download_file(latest, latest_output)
         lib.extract_tar_gz(latest_output, database_path)
     except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
+        lib.print_e(e.returncode)
+        lib.print_e(e.output)
+
 
 def install_ncbi_its(input_args):
     """
@@ -88,19 +143,22 @@ def install_ncbi_its(input_args):
 
     stdout = "ncbi-its_db.out"
     stderr = "ncbi-its_db.err"
-    
-    cmd1 = ["update_blastdb.pl","--passive","--decompress","ITS_RefSeq_Fungi"]
-    cmd2 = ["update_blastdb.pl","taxdb"]
-    if len(input_args.singularity_fungiflow) > 0: cmd1 = input_args.singularity1 + cmd1
-    if len(input_args.singularity_fungiflow) > 0: cmd2 = input_args.singularity1 + cmd2
+
+    cmd1 = ["update_blastdb.pl", "--passive", "--decompress", "ITS_RefSeq_Fungi"]
+    cmd2 = ["update_blastdb.pl", "taxdb"]
+    if len(input_args.singularity_fungiflow) > 0:
+        cmd1 = input_args.singularity1 + cmd1
+    if len(input_args.singularity_fungiflow) > 0:
+        cmd2 = input_args.singularity1 + cmd2
 
     try:
-        lib.execute(cmd1,stdout,stderr)
-        lib.execute(cmd2,stdout,stderr)
+        lib.execute(cmd1, stdout, stderr)
+        lib.execute(cmd2, stdout, stderr)
         lib.extract_tar_gz("taxdb.tar.gz", ".")
     except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
+        lib.print_e(e.returncode)
+        lib.print_e(e.output)
+
 
 def install_eggnog(input_args, database_path):
     """
@@ -110,34 +168,50 @@ def install_eggnog(input_args, database_path):
     stdout = "eggnog_db.out"
     stderr = "eggnog_db.err"
 
-    cmd1 = ["download_eggnog_data.py", "-y", "--data_dir", "."]    
-    cmd2 = ["create_dbs.py", "-m", "diamond", "--dbname", "fungi", "--taxa", "Fungi", "-y", "--data_dir", "."]
-    if len(input_args.singularity_funannotate) > 0: cmd1 = input_args.singularity2 + cmd1
-    if len(input_args.singularity_funannotate) > 0: cmd2 = input_args.singularity2 + cmd2
+    cmd1 = ["download_eggnog_data.py", "-y", "--data_dir", "."]
+    cmd2 = [
+        "create_dbs.py",
+        "-m",
+        "diamond",
+        "--dbname",
+        "fungi",
+        "--taxa",
+        "Fungi",
+        "-y",
+        "--data_dir",
+        ".",
+    ]
+    if len(input_args.singularity_funannotate) > 0:
+        cmd1 = input_args.singularity2 + cmd1
+    if len(input_args.singularity_funannotate) > 0:
+        cmd2 = input_args.singularity2 + cmd2
 
     try:
-        lib.execute(cmd1,stdout,stderr)
-        lib.execute(cmd2,stdout,stderr)
-        print(f"\nExport the GENEMARK_PATH to your environment like so:\n'export GENEMARK_PATH=${database_path}'\n")
+        lib.execute(cmd1, stdout, stderr)
+        lib.execute(cmd2, stdout, stderr)
+        lib.print_n(
+            f"\nExport the GENEMARK_PATH to your environment like so:\n'export GENEMARK_PATH=${database_path}'\n"
+        )
     except subprocess.CalledProcessError as e:
-        print(e.returncode)
-        print(e.output)
+        lib.print_e(e.returncode)
+        lib.print_e(e.output)
+
 
 def check_databases(input_databases, databases_path):
     """
-    Will check key files in each database in 'input_databases' at 
+    Will check key files in each database in 'input_databases' at
     'databases_path' and will return add the database name to either a 'passed'
     or 'failed' list.
     """
-    
+
     failed = []
     passed = []
-    #print(input_databases)
+    # print(input_databases)
 
     # define database paths
-    kraken2_path = os.path.join(databases_path,"kraken2")
-    its_path = os.path.join(databases_path,"ncbi-its")
-    eggnog_path = os.path.join(databases_path,"eggnog")
+    kraken2_path = os.path.join(databases_path, "kraken2")
+    its_path = os.path.join(databases_path, "ncbi-its")
+    eggnog_path = os.path.join(databases_path, "eggnog")
 
     try:
         if "ncbi-its" in input_databases:
@@ -146,8 +220,8 @@ def check_databases(input_databases, databases_path):
             if lib.file_exists_list([ncbi_its, taxdb], "", "") is False:
                 failed.append("ncbi-its")
             elif lib.file_exists_list([ncbi_its, taxdb], "", "") is True:
-                passed.append("ncbi-its") 
-                #print(its_path)
+                passed.append("ncbi-its")
+                # print(its_path)
     except UnboundLocalError:
         pass
     try:
@@ -158,8 +232,8 @@ def check_databases(input_databases, databases_path):
             if lib.file_exists_list([hash, opts, taxo], "", "") is False:
                 failed.append("kraken2")
             elif lib.file_exists_list([hash, opts, taxo], "", "") is True:
-                passed.append("kraken2")  
-                #print(kraken2_path)
+                passed.append("kraken2")
+                # print(kraken2_path)
     except UnboundLocalError:
         pass
     try:
@@ -169,15 +243,19 @@ def check_databases(input_databases, databases_path):
             main = os.path.join(eggnog_path, "eggnog.db")
             prots = os.path.join(eggnog_path, "e5.proteomes.faa")
             fungi_dmnd = os.path.join(eggnog_path, "eggnog_prots.fungi.dmnd")
-            if lib.file_exists_list([dmnd, taxa, main, prots, fungi_dmnd], "", "") is False:
+            if (
+                lib.file_exists_list([dmnd, taxa, main, prots, fungi_dmnd], "", "")
+                is False
+            ):
                 failed.append("eggnog")
             elif lib.file_exists_list([dmnd, taxa, main, prots], "", "") is True:
-                passed.append("eggnog") 
-                #print(eggnog_path)
+                passed.append("eggnog")
+                # print(eggnog_path)
     except UnboundLocalError:
         pass
 
     return passed, failed
+
 
 def main():
 
@@ -188,95 +266,116 @@ def main():
 
     # define the singularity container paths
     if args.singularity_fungiflow is not None:
-        args.singularity1 = ["singularity", "exec", os.path.abspath(os.path.join(args.singularity_fungiflow))]
+        args.singularity1 = [
+            "singularity",
+            "exec",
+            os.path.abspath(os.path.join(args.singularity_fungiflow)),
+        ]
     if args.singularity_funannotate is not None:
-        args.singularity2 = ["singularity", "exec", os.path.abspath(os.path.join(args.singularity_funannotate))]
+        args.singularity2 = [
+            "singularity",
+            "exec",
+            os.path.abspath(os.path.join(args.singularity_funannotate)),
+        ]
 
     # create/move to the databases directory
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
-    #print(args)
+    # print(args)
     databases_path = os.path.abspath(os.path.join(args.directory))
-    print(f"Database path: {databases_path}")
+    lib.print_n(f"Database path: {databases_path}")
     os.chdir(databases_path)
 
     # need to check this code block to see what dbs are printed with a given input
-    dbs = ["kraken2","ncbi-its","eggnog"]
+    dbs = ["kraken2", "ncbi-its", "eggnog"]
     if args.databases != "all":
-        input_databases = args.databases.split(',')
+        input_databases = args.databases.split(",")
         for i in input_databases:
             if i.strip() not in dbs:
-                lib.print_e(f"{i.strip()} is not a valid database option. Valid options are {dbs}")
+                lib.print_e(
+                    f"{i.strip()} is not a valid database option. Valid options are {dbs}"
+                )
                 exit()
         dbs = args.databases
     else:
         input_databases = dbs
-    
-    print(input_databases)
+
+    lib.print_n(input_databases)
 
     # define database paths
-    kraken2_path = os.path.join(databases_path,"kraken2")
-    its_path = os.path.join(databases_path,"ncbi-its")
-    eggnog_path = os.path.join(databases_path,"eggnog")
+    kraken2_path = os.path.join(databases_path, "kraken2")
+    its_path = os.path.join(databases_path, "ncbi-its")
+    eggnog_path = os.path.join(databases_path, "eggnog")
 
     # check what databases exist
     passed, failed = check_databases(input_databases, databases_path)
-    #print(passed, failed)
-    
+    # print(passed, failed)
+
     # install databases
     if len(passed) > 0:
-        print("\nThe following databases exist:")
+        lib.print_n("\nThe following databases exist:")
         for db in passed:
-            print(f" - {db}, skipping installation...")
+            lib.print_n(f" - {db}, skipping installation...")
     if len(failed) > 0:
-        print("\nInstalling the following databases:")
+        lib.print_n("\nInstalling the following databases:")
         for db in failed:
-            print(f" - {db}")
-    print("\n")    
+            lib.print_n(f" - {db}")
+    lib.print_n("\n")
     if "kraken2" in dbs and "kraken2" in failed:
         kraken2_time = datetime.datetime.now()
-        print("Downloading and installing kraken2 database...")
+        lib.print_n("Downloading and installing kraken2 database...")
         if not os.path.exists(kraken2_path):
-            os.makedirs(kraken2_path)    
+            os.makedirs(kraken2_path)
         install_kraken2_db(kraken2_path)
-        lib.print_h(f"kraken2 database installed in {datetime.datetime.now() - kraken2_time}")
+        lib.print_h(
+            f"kraken2 database installed in {datetime.datetime.now() - kraken2_time}"
+        )
     if "ncbi-its" in dbs and "ncbi-its" in failed:
         its_time = datetime.datetime.now()
-        print("Downloading and installing ncbi-its database...")
+        lib.print_n("Downloading and installing ncbi-its database...")
         if not os.path.exists(its_path):
-            os.makedirs(its_path)       
+            os.makedirs(its_path)
         os.chdir(its_path)
         install_ncbi_its(args)
-        lib.print_h(f"ncbi-its database installed in {datetime.datetime.now() - its_time}")
+        lib.print_h(
+            f"ncbi-its database installed in {datetime.datetime.now() - its_time}"
+        )
         os.chdir(databases_path)
     if "eggnog" in dbs and "eggnog" in failed:
         eggnog_time = datetime.datetime.now()
-        print("Downloading and installing the eggnog database...")
+        lib.print_n("Downloading and installing the eggnog database...")
         if not os.path.exists(eggnog_path):
-            os.makedirs(eggnog_path) 
+            os.makedirs(eggnog_path)
         os.chdir(eggnog_path)
         install_eggnog(args, eggnog_path)
-        lib.print_h(f"eggnog database intalled in {datetime.datetime.now() - eggnog_time}")
+        lib.print_h(
+            f"eggnog database intalled in {datetime.datetime.now() - eggnog_time}"
+        )
         os.chdir(databases_path)
-    
+
     # check all databases were installed as expected
     passed, failed = check_databases(input_databases, databases_path)
-    
+
     # states which database(s) were installed correctly.
     if len(passed) > 0:
-        print("The following databases were successfully installed/existed:")
+        lib.print_n("The following databases were successfully installed/existed:")
         for db in passed:
-            print(f" - {db} is installed!")
+            lib.print_n(f" - {db} is installed!")
     if len(failed) > 0:
         lib.print_e("\nThere are issues with the following databases:")
         for i in failed:
-            print(f" - {i}")
+            lib.print_n(f" - {i}")
         lib.print_e("Please check the installation path.")
-        lib.print_e("Try removing the suspect database directories and run `install.py` again.")
-    
+        lib.print_e(
+            "Try removing the suspect database directories and run `install.py` again."
+        )
+
     if len(failed) == 0:
-        lib.print_h(f"\nAll databases installed in {datetime.datetime.now() - start_time}")
+        lib.print_h(
+            f"\nAll databases installed in {datetime.datetime.now() - start_time}"
+        )
     lib.print_t("\n⁂⁂⁂⁂⁂⁂⁂⁂ Script Finished ⁂⁂⁂⁂⁂⁂⁂⁂\n")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

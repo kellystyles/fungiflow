@@ -1,7 +1,3 @@
 __pycache__
 singularity_recipes/interproscan.def
-bld.bat
-*.yml
-*.yaml
 collate_completion.py
-blobplot.py

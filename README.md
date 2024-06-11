@@ -8,7 +8,7 @@
 
 > A reproducible workflow for identifying fungal biosynthetic gene clusters (BGCs) from short read Illumina sequence data with minimal inputs. 
 
-A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline.[^2] Additionally, Fungiflow is also capable of assembling and surveying metagenomic data.
+A Python pipeline primarily designed for manipulating fungal short read Illumina sequence data in a Unix environment. The primary assembly module will clean and filter short read Illumina sequence data, prior to preparing a draft assembly. A post-analysis module will generate summary statistics and extract BGCs with antiSMASH v6.[^1] Optional modules allow decoration of assemblies with gene predictions from the `funannotate` pipeline.[^2] Additionally, <i>Fungiflow</i> is also capable of assembling long MinION reads, both Illumina and MinION reads in a hybrid assembly, and assemble metagenomic data.
 
 <p align="center">
 
@@ -16,7 +16,7 @@ A Python pipeline primarily designed for manipulating fungal short read Illumina
 
 </p>
 
-## Fungiflow pipeline
+## <i>Fungiflow</i> pipeline
 
 The overall workflow is defined by several modules:
 1. **Assembly module**
@@ -38,13 +38,11 @@ The overall workflow is defined by several modules:
 
 ## Low-coverage genome assembly
 
-The original purpose of this workflow was to assemble low-coverage fungal Illumina sequence reads (~5×), but works better for higher coverage sequence reads (>15×). Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest, in this case BGCs.
-
-> *[`cluster_search`](https://github.com/kellystyles/cluster_search) can identify discrete BGCs across fragmented genome assemblies using user-supplied pHMMs*. 
+The original purpose of this workflow was to assemble low-coverage fungal Illumina sequence reads (~5×), but works better for higher coverage sequence reads (>15×). Generating sequencing data can be expensive, but you can get data on more strains if you sequence these strains to low coverage. This can be useful for identifying strains that contain features of interest e.g., BGCs.
 
 Strains of interest could then be sequenced with a higher coverage using additional short reads or MinION long reads, and a more complete draft assembly prepared. 
-Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains of differing coverages.
-The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and content to the reference assembly.
+Below are examples of test runs using synthetic paired Illumina 150 bp short reads generated from 10 taxonomically diverse fungal strains at differing coverages.
+The tests showed that even short read coverage coverage as low as 10× can result in an assembly that is of similar size and BGC content to the reference assembly.
 
 <p align="center">
     
@@ -71,8 +69,8 @@ To ensure a repeatable and consistent output, this pipeline relies on several Si
 
 ```
 singularity pull library://styleske/fungiflow/fungiflow:3.0.0                 # main fungiflow image
-singularity pull library://kellystyles/fungiflow/funannotate:1.0.0            # funannotate image (Official Docker image + EggNOGG)
-singularity pull docker://antismash/standalone:6.1.1       				# antismash image (Official Docker image)
+singularity pull library://kellystyles/fungiflow/funannotate:1.0.0            # funannotate image (Official Docker image + EggNOG)
+singularity pull docker://antismash/standalone:6.1.1       				      # antismash image (Official Docker image)
 ```
 
 The only required dependency is `singularity`, along with some third-party Python libraries (`numpy`, `pandas`, and optionally `seaborn`). You can install these using `mamba` (or `conda`) as follows:
@@ -84,9 +82,9 @@ mamba install numpy pandas seaborn tqdm
 mamba deactivate
 ```
 
-### GeneMark-ES gene predictions
+### GeneMark-ES gene predictions (Optional)
 
-If you plan to use the optional Funannotate module, you can optionally obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality *ab initio* gene predictions for eukaroytic assemblies.[^4] Due to licensing restrictions, it can't be bundled within the Fungiflow Funannotate Singularity image. 
+If you plan to use the optional Funannotate module, you can optionally obtain a copy of the GeneMark-ES software and its license. GeneMark-ES provides high-quality *ab initio* gene predictions for eukaroytic assemblies.[^4] Due to licensing restrictions, it can't be bundled within the <i>Fungiflow</i> Funannotate Singularity image. 
 The perl shebangs in the GeneMark-ES scripts will need to be altered to `/venv/bin/perl`. 
 You can download GeneMark-ES from [here](http://topaz.gatech.edu/GeneMark/license_download.cgi) and install it using the following commands:
 
@@ -117,7 +115,7 @@ several hours:
 
 - Kraken2 standard database (16 GB | 1 hour): required for taxonomic filtering of short reads in Assembly module.
 - ITS_Refseq_Fungi database (162 Mb | 30 mins): required for BLASTn of extracted ITS sequences in Post-anlaysis module.
-- EggNOG database (19 GB | 1 hour): required for eggnog functional annotation in Funannotate module.
+- EggNOG database (19 GB | 1 hour): required for EggNOG functional annotation in Funannotate module.
 
 *Note that the databases mentioned here might differ in size from the ones stated in the workflow, as they may be more up-to-date.*
 
@@ -199,7 +197,7 @@ optional arguments:
   --careful             Assembles reads with SPAdes using lower k-mer values and runs in single cell mode.
   --genemark_path GENEMARK_PATH
                         Path to GeneMark-ES script.
-  --print_workflow      Will print a summary of the workflow upon completion of the script
+  --print_workflow      Will print a summary of the workflow upon completion of the script.
 ```
 
 There is a SLURM script for running the pipeline on your SLURM-compatible HPC. Edit this with your specific variables prior to use.
@@ -209,54 +207,47 @@ sbatch fungiflow_slurm.sh
 
 ### Speed
 This workflow is designed to operate on an HPC, so expects a lot of CPUs and memory. I would suggest a minimum of 16 CPUs and 32 GB of memory. If you would like to perform taxonomic filtering of short reads with `kraken2`, increase the memory to >16 Gb, as the entire hash table will need to be loaded into memory.
-The tests from the same synthetic read datasets run with 16 CPUs and 32 GB memory CPU and memory efficiency as below:
-
-<p align="center">
-    
-![Computational efficiency of differing coverage synthetic assemblies of 10 fungal strains](./figures/synthetic_tests.png)
-
-</p>
 
 ## Output
 ### File tree
-After cloning into the Fungiflow GitHub repository, create a new project folder in `/fungiflow/projects/`. In this folder, create a nested directory named `data/raw` and place all raw Illumina sequence reads into this folder in `*fq.gz format` (no preprocessed reads). The final path should look like `/fungiflow/projects/project_name/data/raw`.
+After cloning into the <i>Fungiflow</i> GitHub repository, create a new project folder in `/fungiflow/projects/`. In this folder, create a nested directory named `data/raw` and place all raw Illumina sequence reads into this folder in `*fq.gz format` (no preprocessed reads). The final path should look like `/fungiflow/projects/project_name/data/raw`.
 
 ```
 project directory
-│   (array1_val)_F.fq.gz
-│   (array1_val)_R.fq.gz
-│   (array1_val)_ONT_reads.fq.gz  
+│   <array_val>_F.fq.gz
+│   <array_val>_R.fq.gz
+│   <array_val>_ONT_reads.fq.gz  
 │   ...
 │
 └───adapters
-│   │   (array1_val)_adapters.fasta       # FASTA file of adapters found in reads
-│   │   (array1_val)_adapters.fasta
+│   │   <array_val>_adapters.fasta       # FASTA file of adapters found in reads
+│   │   <array_val>_adapters.fasta
 │   │   ...
 │
 └───trimmed
-│   │   (array1_val)_trimmed_1P.fq.gz     # short paired forward trimmed reads
-│   │   (array1_val)_trimmed_1U.fq.gz     # short unpaired forward trimmed reads
-│   │   (array1_val)_trimmed_2P.fq.gz     # short paired reverse trimmed reads
-│   │   (array1_val)_trimmed_2U.fq.gz     # short unpaired reverse trimmed reads
-│   │   (array1_val)_ONT_reads.fq         # trimmed MinION reads
-│   │   (array1_val)_ONT_reads.fa         # trimmed MinION reads in FASTA format
-│   │   (array1_val)_ONT_reads_lf.fa      # length-filtered MinION reads
-│   │   (array1_val)_ONT_reads_corr.fa    # corrected MinION reads
-│   │   (array1_val)_mapped.npy           # short reads mapped to MinION reads
+│   │   <array_val>_trimmed_1P.fq.gz     # short paired forward trimmed reads
+│   │   <array_val>_trimmed_1U.fq.gz     # short unpaired forward trimmed reads
+│   │   <array_val>_trimmed_2P.fq.gz     # short paired reverse trimmed reads
+│   │   <array_val>_trimmed_2U.fq.gz     # short unpaired reverse trimmed reads
+│   │   <array_val>_ONT_reads.fq         # trimmed MinION reads
+│   │   <array_val>_ONT_reads.fa         # trimmed MinION reads in FASTA format
+│   │   <array_val>_ONT_reads_lf.fa      # length-filtered MinION reads
+│   │   <array_val>_ONT_reads_corr.fa    # corrected MinION reads
+│   │   <array_val>_mapped.npy           # short reads mapped to MinION reads
 │   │   ...
 │
 └───kraken2
-│   │   (array1_val)_class_1.fq           # classified forward reads
-│   │   (array1_val)_unclass_1.fq         # unclassified forward reads
-│   │   (array1_val)_class_2.fq           # classified reverse reads
-│   │   (array1_val)_unclass_2.fq         # unclassified reverse reads
+│   │   <array_val>_class_1.fq           # classified forward reads
+│   │   <array_val>_unclass_1.fq         # unclassified forward reads
+│   │   <array_val>_class_2.fq           # classified reverse reads
+│   │   <array_val>_unclass_2.fq         # unclassified reverse reads
 |   |   ...
 │
 └───assembly
-│   │   (array1_val)_scaffolds.fasta      # SPADes assembly file
+│   │   <array_val>_scaffolds.fasta      # SPADes assembly file
 |   |   assembly.fasta                    # Flye assembly file
-|   |   (array1_val)_ONT_corr.sam         # short reads mapped to Flye assembly
-│   │   (array1_val)_pilon.fa             # pilon polished hybrid assembly file
+|   |   <array_val>_ONT_corr.sam         # short reads mapped to Flye assembly
+│   │   <array_val>_pilon.fa             # pilon polished hybrid assembly file
 │   │   racon_consensus.fa                # racon polished hybrid assembly file
 |   |   racon_consensus.fa.bam            # short reads mapped to racon assembly
 |   |   racon_consensus.fa.bam.bai        # index of above file
@@ -270,23 +261,23 @@ project directory
 │   
 └───funannotate
 │   │
-│   └───(array1_val)
+│   └───<array_val>
 │       └───logfiles
 │       └───predict_misc
 │       └───predict_results
-│       |   |   (array1_val).gbk          # GBK file of aseembly with predicted genes
+│       |   |   <array_val>.gbk          # GBK file of aseembly with predicted genes
 |       └───eggnog
-|       |   |   (array1_val).emapper.annotations  # eggnog annotations
+|       |   |   <array_val>.emapper.annotations  # eggnog annotations
 │       └───annotate_misc
 |       |   |   ...
 │       └───annotate_results 
-|           |   (array1_val).gbk          # GBK file with annotated genes       
+|           |   <array_val>.gbk          # GBK file with annotated genes       
 │           |   ...
 |
 └───antismash
 │   │
-│   |   (array1_val).gbk                  # GBK file input to antiSMASH
-|   |   (array1_val).json                 # JSON file of antiSMASH output
+│   |   <array_val>.gbk                  # GBK file input to antiSMASH
+|   |   <array_val>.json                 # JSON file of antiSMASH output
 |   |   index.html                        # output HTML viewer
 |   |   ...
 |
@@ -295,26 +286,23 @@ project directory
 │   |   transposed_report.tsv             # output report file used by this pipeline
 |   |   report.html                       # output HTML viewer
 |   |   ...
-
+|
+└───results
+│   │
+│   |   <array_val>_results.csv          # output CSV file of Fungiflow results
 
 ```
-### Collating data from multiple Fungiflow runs
-A script `parse_all.py` is provided which will collate various information from each Fungiflow output directory. This will collate data on assembly metrics from `Quast`, single copy orthologs from `BUSCO`, BGC information from `antiSMASH`, and ITS sequence information from `ITSx`. Each output directory will have data collated onto a single row in a CSV file `master_results.csv`. Additionally, all the BGCs from each output directory will be collated into a CSV file `all_bgcs.csv`.
+### Collating data from multiple <i>Fungiflow</i> runs
+A script `parse_all.py` is provided which will collate various information from each <i>Fungiflow</i> output directory. This will collate data on assembly metrics from `Quast`, single copy orthologs from `BUSCO`, BGC information from `antiSMASH`, and ITS sequence information from `ITSx`. Each output directory will have data collated onto a single row in a CSV file `master_results.csv`. Additionally, all the BGCs from each output directory will be collated into a CSV file `all_bgcs.csv`.
 
-Usage is below, where `parent_directory` is a directory containing Fungiflow output directories.
+Usage is below, where `parent_directory` is a directory containing <i>Fungiflow</i> output directories.
 ```
 python3 parse_all.py 'parent_directory'
 ```
 
 ## Planned implementations
 
-- Work will be done to implement multiprocessing for slower parts of the pipeline, particularly lookup/identification tasks (e.g., `blastn` for ITS lookup).
-- Implementation of assembly using MinION long reads only, particularly with the release of the R10 flow cells which purport a >99% accuracy rate.
 - Whilst repeatability and accessibility is ensured by the usage of Singularity containers, if enough people are interested, I will consider preparing a conda environment and/or PyPI package.
-
-## Known Bugs
-
-
 
 ## References
 
