@@ -1,0 +1,13 @@
+[tool.poetry]
+name = "fungiflow"
+version = "0.1.0"
+description = "A brief description of your project"
+authors = ["Kelly Styles <kelly@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+your_dependency = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
