@@ -1,0 +1,6 @@
+biopython>=1.79
+snakemake>=7.0
+pandas>=1.0
+requests>=2.25
+pytest>=6.0
+pytest-cov>=2.12
